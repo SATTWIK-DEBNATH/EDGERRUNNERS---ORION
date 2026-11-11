@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+
+# Secrets and local state
+.env
+.env.*
+!.env.example
+*.sqlite
+*.db
+
+# Local map/model cache
+data/cache/
+data/models/
+
+# Frontend dependencies/build output
+node_modules/
+dist/
+.vite/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python virtual environments and tooling
+backend/.venv.relocated-stale/
+.mypy_cache/
+.ruff_cache/
+
+# Frontend build output
+frontend/dist/
+
+# Logs
+*.log
+
+# Separate repository — keep EDGERUNNERS independent
+/EDGERUNNERS/
