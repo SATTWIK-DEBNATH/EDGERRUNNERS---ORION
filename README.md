@@ -1,4 +1,4 @@
-# 🌐 ORION · AUTONOMOUS X
+#  ORION · AUTONOMOUS X
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18.3+-61DAFB.svg?logo=react&logoColor=black)](https://react.dev)
@@ -13,7 +13,7 @@
 
 ---
 
-## 💡 Why We Built Orion
+##  Why We Built Orion
 
 Logistics operations are running on decades-old software. When a highway closes, a truck breaks down, or an urgent medical delivery is placed, traditional dispatchers spend hours manually recalculating schedules across fragmented spreadsheets. 
 
@@ -24,11 +24,11 @@ Logistics operations are running on decades-old software. When a highway closes,
 
 ---
 
-## 🏛️ System Architecture
+##  System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Client ["🖥️ Modern User Interface"]
+    subgraph Client [" Modern User Interface"]
         LP["Landing Page & Framer UI"]
         Auth["OneTrade.Ai Auth (6-Stage)"]
         Dash["Enterprise React Dashboard"]
@@ -37,7 +37,7 @@ flowchart TD
         Dash --> Map
     end
 
-    subgraph Gateway ["⚡ Real-Time API Gateway"]
+    subgraph Gateway [" Real-Time API Gateway"]
         FAP["FastAPI Application Server"]
         WS["WebSocket Live Stream Bridge"]
         Cedar["Cedar PEP / SMT Policy Engine"]
@@ -45,7 +45,7 @@ flowchart TD
         FAP --- Cedar
     end
 
-    subgraph Streaming ["🌊 Event-Driven Backbone"]
+    subgraph Streaming [" Event-Driven Backbone"]
         Kafka["Kafka KRaft Cluster"]
         Topic1["orders.events"]
         Topic2["telemetry.gps"]
@@ -57,7 +57,7 @@ flowchart TD
         Kafka --> Flink
     end
 
-    subgraph Intelligence ["🧠 Solvers & Optimization"]
+    subgraph Intelligence [" Solvers & Optimization"]
         Timefold["Timefold Open-Source VRP Solver"]
         ORTools["OR-Tools Multi-Depot Optimizer"]
         H3["Uber H3 Hexagonal Spatial Index"]
@@ -73,11 +73,11 @@ flowchart TD
 
 ---
 
-## ✨ Key Features & User Experience
+##  Key Features & User Experience
 
-### 1. 🌐 Public Landing & OneTrade.Ai Onboarding
+### 1.  Public Landing
 - **Framer Public Experience**: High-converting freight forwarder showcase with air, sea, and road freight capabilities.
-- **OneTrade.Ai Enterprise Authentication**: A 6-screen onboarding modal with real-world illustration banners:
+- **Supabase Enterprise Authentication**: A 6-screen onboarding modal with real-world illustration banners:
   - Account Sign-in with remember me & passwordless options
   - Password Reset & recovery email dispatch
   - Multi-factor OTP code verification
@@ -85,28 +85,28 @@ flowchart TD
   - Contact Details & Role profiling
   - Instant dispatch to the operations control plane
 
-### 2. 📊 Enterprise Overview Dashboard (`LogisticsOverview`)
+### 2.  Enterprise Overview Dashboard (`LogisticsOverview`)
 - **Recent Orders Analytics**: Interactive monthly timeframe selector, active KPI cards (720 Active, 120 Pending, 450 Accepted), and smooth SVG area demand charts showing `↑ 40%` month-over-month growth.
 - **Loading Trucks Donut Breakdown**: Instant visualization across 120 fleet units categorized into *Active*, *Loading Delayed*, *Ready to Load*, *Unloading Delayed*, *Ready to Unload*, and *Canceled*.
 - **Live Shipping Registry**: Data grid highlighting recent dispatches, delivery statuses, cargo weights, routes, and arrival dates.
 - **Available Cargo & Utilization**: Progress monitors showing load percentages and one-click proof-of-delivery downloads.
 - **Order Requests Feed**: Real-time incoming demand requests with pickup/destination tags, customer pills, and route mini-map previews.
 
-### 3. 🚚 Live Delivery Tracking (`DeliveryTrackingView`)
+### 3.  Live Delivery Tracking (`DeliveryTrackingView`)
 - **Interactive Route Map**: Centered on major freight corridors (Delhi ➔ Gurugram ➔ Rewari ➔ Kotputli ➔ Shahpura ➔ Jaipur) rendered via MapLibre GL.
 - **Floating Telemetry Overlay**: Live highway location indicator (`NH04 - Jaipur Highway`), remaining distance (`240 KM Left`), last checkpoint timestamp, and real-time speedometer gauges (`120 Kmps`).
 - **Interactive Tour Guide**: Step-by-step contextual tooltip guiding operators through real-time telemetry filters.
 - **Driver Card & Communication**: Quick driver profiling (`#Driv012345`) with direct contact actions.
 - **Vehicle Details & Specs Card**: Technical breakdown featuring the real-world **Eicher Pro 2059** truck, including license registration, cargo volume (`35,393 Ltr`), max load capacity (`6.5 Ton`), and load dimensions (`11.7m × 4.8m`).
 
-### 4. ⚡ Real-Time Streaming & Zero-Trust Governance
+### 4.  Real-Time Streaming & Zero-Trust Governance
 - **Kafka KRaft Infrastructure**: Decoupled event topics eliminating Zookeeper dependencies for high-throughput messaging.
 - **Complex Event Processing (CEP)**: Flink-style patterns detecting delivery delays, route deviations, and cargo temperature anomalies.
 - **Cedar SMT Policy Enforcement**: Formal verification ensuring every vehicle dispatch, route adjustment, and warehouse access request complies with strict security policies.
 
 ---
 
-## 🛠️ The Tech Stack
+##  The Tech Stack
 
 | Layer | Technologies |
 | :--- | :--- |
@@ -120,7 +120,7 @@ flowchart TD
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - **Python**: 3.12 or higher
@@ -175,7 +175,7 @@ bash scripts/create_kafka_topics.sh
 
 ---
 
-## 🧪 Testing & Validation
+##  Testing & Validation
 
 Every critical component of Orion Autonomous X is covered by automated unit and integration tests:
 
@@ -202,7 +202,7 @@ Every critical component of Orion Autonomous X is covered by automated unit and 
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 EDGERUNNERS/AUTONOMOUS X/
@@ -244,7 +244,7 @@ EDGERUNNERS/AUTONOMOUS X/
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 We welcome contributions to Orion Autonomous X! Whether you're adding new routing heuristics, expanding telemetry sensor formats, or improving the frontend interface:
 
@@ -256,7 +256,7 @@ We welcome contributions to Orion Autonomous X! Whether you're adding new routin
 
 ---
 
-## 📜 License
+##  License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
