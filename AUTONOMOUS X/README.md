@@ -224,7 +224,7 @@ EDGERUNNERS/AUTONOMOUS X/
 │   ├── public/
 │   │   ├── assets/          # Vehicle photos, avatars, and route minimaps
 │   │   ├── auth/            # OneTrade.Ai onboarding hero illustrations
-│   │   └── landing.html     # SwiftLine logistics Framer landing page
+│   │   └── landing.html     # Autonomous X logistics Framer landing page
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── dashboard/   # Sidebar, TopNavbar, LogisticsOverview, DeliveryTrackingView

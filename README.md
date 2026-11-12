@@ -224,7 +224,7 @@ EDGERUNNERS/AUTONOMOUS X/
 │   ├── public/
 │   │   ├── assets/          # Vehicle photos, avatars, and route minimaps
 │   │   ├── auth/            # OneTrade.Ai onboarding hero illustrations
-│   │   └── landing.html     # SwiftLine logistics Framer landing page
+│   │   └── landing.html     # Autonomous X logistics Framer landing page
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── dashboard/   # Sidebar, TopNavbar, LogisticsOverview, DeliveryTrackingView
@@ -265,3 +265,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <div align="center">
   <sub>Crafted with passion for the future of autonomous supply chains · Powered by <b>Orion Autonomous X</b></sub>
 </div>
+

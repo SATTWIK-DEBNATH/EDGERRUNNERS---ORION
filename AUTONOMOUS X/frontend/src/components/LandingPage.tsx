@@ -25,7 +25,7 @@ export default function LandingPage({ onOpenAuth, onOpenDashboard, isLoggedIn }:
       <iframe
         id="framer-landing-frame"
         src="/landing.html"
-        title="SwiftLine Logistics Landing Page"
+        title="Autonomous X Logistics Landing Page"
         className="framer-iframe"
       />
 
