@@ -97,6 +97,7 @@ export default function RoutePlanningView() {
   const [newDuration, setNewDuration] = useState('')
 
   const [notification, setNotification] = useState('')
+  const [showTourBubble, setShowTourBubble] = useState(true)
 
   const filteredRoutes = routes.filter((r) =>
     r.routeId.toLowerCase().includes(routeSearch.toLowerCase()) ||
@@ -220,6 +221,48 @@ export default function RoutePlanningView() {
                 ))}
               </div>
             </div>
+
+            {/* Guided Tour Bubble 2/5 (Identical to Design Mockup) */}
+            {showTourBubble && (
+              <div className="absolute top-16 left-[310px] z-20 w-80 bg-blue-600 text-white rounded-2xl p-4 shadow-2xl border border-blue-400/40 pointer-events-auto animate-in fade-in slide-in-from-left-4 duration-300">
+                {/* Speech Bubble Arrow pointing left */}
+                <div className="absolute top-6 -left-2 w-4 h-4 bg-blue-600 rotate-45 border-l border-b border-blue-400/40" />
+
+                <div className="flex items-center justify-between mb-1.5">
+                  <h4 className="text-xs font-bold text-white tracking-wide">Vehicles</h4>
+                  <button
+                    type="button"
+                    onClick={() => setShowTourBubble(false)}
+                    className="text-white/70 hover:text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10"
+                    title="Close Tour"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p className="text-[11px] text-blue-50 leading-relaxed mb-3">
+                  You can see the list of vehicles that appears here. You can also search for the vehicles and also change the routes by selecting.
+                </p>
+                <div className="flex items-center justify-between pt-1 border-t border-white/15 text-[11px]">
+                  <span className="text-blue-200 font-semibold font-mono">2 / 5</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowTourBubble(false)}
+                      className="px-2.5 py-1 rounded-lg bg-blue-700/60 hover:bg-blue-700 text-white text-[11px] font-medium transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowTourBubble(false)}
+                      className="px-3 py-1 rounded-lg bg-white text-blue-700 hover:bg-blue-50 text-[11px] font-bold shadow-xs transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Overlaid Route Timeline Banner (Bottom of Map) */}
             <div className="absolute bottom-3 left-3 right-3 z-10 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-4 shadow-md flex flex-col md:flex-row items-center justify-between gap-4 pointer-events-auto">

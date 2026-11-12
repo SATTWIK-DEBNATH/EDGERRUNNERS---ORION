@@ -142,6 +142,7 @@ export default function DeliveryTrackingView({ overview: _overview }: Props) {
   const [callDuration, setCallDuration] = useState(14)
   const [showVehicleDetailsModal, setShowVehicleDetailsModal] = useState(false)
   const [showDocModal, setShowDocModal] = useState(false)
+  const [showTourBubble, setShowTourBubble] = useState(true)
 
   const activeVehicle = vehicles.find((v) => v.id === selectedId) || vehicles[0]
 
@@ -469,6 +470,45 @@ Generated At    : ${new Date().toISOString()}
               activeHighway="NH48 / NE4 Freight Corridor"
               heightClass="h-[520px]"
             >
+              {/* Guided Tour Bubble 4/5 (Exact match to Design Mockup) */}
+              {showTourBubble && (
+                <div className="absolute top-16 right-4 z-20 w-80 bg-blue-600 text-white rounded-2xl p-4 shadow-2xl border border-blue-400/40 pointer-events-auto animate-in fade-in slide-in-from-right-4 duration-300">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h4 className="text-xs font-bold text-white tracking-wide">Status</h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowTourBubble(false)}
+                      className="text-white/70 hover:text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10"
+                      title="Close Tour"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-blue-50 leading-relaxed mb-3">
+                    You can see the status of the vehicle and track over here along with the visual representation. The time left and detailed track information also.
+                  </p>
+                  <div className="flex items-center justify-between pt-1 border-t border-white/15 text-[11px]">
+                    <span className="text-blue-200 font-semibold font-mono">4 / 5</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowTourBubble(false)}
+                        className="px-2.5 py-1 rounded-lg bg-blue-700/60 hover:bg-blue-700 text-white text-[11px] font-medium transition-colors"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowTourBubble(false)}
+                        className="px-3 py-1 rounded-lg bg-white text-blue-700 hover:bg-blue-50 text-[11px] font-bold shadow-xs transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Bottom Telemetry Floating Overlay Bar (Exact match to Image 7) */}
               <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md rounded-2xl p-3 border border-slate-200 shadow-lg grid grid-cols-3 gap-y-2 gap-x-4 text-xs z-10 pointer-events-auto">
                 {/* Metric 1: Location */}

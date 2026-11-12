@@ -10,6 +10,8 @@ configureMapLibreWorker()
 
 type Props = { overview: Overview }
 
+const MAPTILER_KEY = 'pEMrDBU1TT7FTT57Ka3A'
+
 export default function OperationsMap({ overview }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<InstanceType<typeof MapLibreMap> | null>(null)
@@ -24,8 +26,15 @@ export default function OperationsMap({ overview }: Props) {
       center: [77.59, 12.97], zoom: 11,
       style: {
         version: 8,
-        sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap contributors' } },
-        layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+        sources: {
+          maptiler: {
+            type: 'raster',
+            tiles: [`https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`],
+            tileSize: 256,
+            attribution: '© MapTiler © OpenStreetMap contributors',
+          },
+        },
+        layers: [{ id: 'maptiler', type: 'raster', source: 'maptiler' }],
       },
       attributionControl: { compact: true },
     })

@@ -97,6 +97,10 @@ export const WAYPOINTS: Waypoint[] = [
 // Current truck position (Between Kotputli & Behror on NH48)
 const DEFAULT_TRUCK_LOCATION: [number, number] = [76.24, 27.797]
 
+const MAPTILER_KEY = 'pEMrDBU1TT7FTT57Ka3A'
+
+type MapLayer = 'maptiler' | 'satellite' | 'outdoor' | 'osm'
+
 export default function InteractiveCorridorMap({
   shipmentId = 'SHIPID0123',
   vehiclePlate = 'DL04MP7045',
@@ -110,8 +114,8 @@ export default function InteractiveCorridorMap({
   const mapInstance = useRef<InstanceType<typeof MapLibreMap> | null>(null)
   const truckMarkerRef = useRef<InstanceType<typeof Marker> | null>(null)
 
-  const [activeLayer, setActiveLayer] = useState<'voyager' | 'satellite' | 'osm'>('voyager')
-  const [zoomLevel, setZoomLevel] = useState<number>(7.6)
+  const [activeLayer, setActiveLayer] = useState<MapLayer>('maptiler')
+  const [zoomLevel, setZoomLevel] = useState<number>(7.8)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [truckPos, setTruckPos] = useState<[number, number]>(DEFAULT_TRUCK_LOCATION)
 
@@ -137,33 +141,46 @@ export default function InteractiveCorridorMap({
     const map = new MapLibreMap({
       container: mapContainer.current,
       center: [76.5, 27.65], // Center between Jaipur and Delhi
-      zoom: 7.4,
-      pitch: 25,
-      bearing: 15,
+      zoom: 7.8,
+      pitch: 0,
+      bearing: 0,
+      scrollZoom: true,
+      dragPan: true,
+      dragRotate: true,
+      doubleClickZoom: true,
+      touchZoomRotate: true,
       style: {
         version: 8,
         sources: {
-          voyager: {
+          maptiler: {
             type: 'raster',
             tiles: [
-              'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+              `https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`,
             ],
             tileSize: 256,
-            attribution: '© CartoDB © OpenStreetMap',
+            attribution: '© MapTiler © OpenStreetMap contributors',
+          },
+          satellite: {
+            type: 'raster',
+            tiles: [
+              `https://api.maptiler.com/maps/satellite/256/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`,
+            ],
+            tileSize: 256,
+            attribution: '© MapTiler © OpenStreetMap contributors',
+          },
+          outdoor: {
+            type: 'raster',
+            tiles: [
+              `https://api.maptiler.com/maps/outdoor-v2/256/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`,
+            ],
+            tileSize: 256,
+            attribution: '© MapTiler © OpenStreetMap contributors',
           },
           osm: {
             type: 'raster',
             tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
             tileSize: 256,
             attribution: '© OpenStreetMap contributors',
-          },
-          satellite: {
-            type: 'raster',
-            tiles: [
-              'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            ],
-            tileSize: 256,
-            attribution: '© Esri World Imagery',
           },
         },
         layers: [
@@ -174,15 +191,21 @@ export default function InteractiveCorridorMap({
             layout: { visibility: 'none' },
           },
           {
+            id: 'outdoor-layer',
+            type: 'raster',
+            source: 'outdoor',
+            layout: { visibility: 'none' },
+          },
+          {
             id: 'osm-layer',
             type: 'raster',
             source: 'osm',
             layout: { visibility: 'none' },
           },
           {
-            id: 'voyager-layer',
+            id: 'maptiler-layer',
             type: 'raster',
-            source: 'voyager',
+            source: 'maptiler',
             layout: { visibility: 'visible' },
           },
         ],
@@ -356,14 +379,24 @@ export default function InteractiveCorridorMap({
     }
   }, [truckPos])
 
+  // Zoom In / Zoom Out Controls
+  function handleZoomIn() {
+    mapInstance.current?.zoomIn({ duration: 300 })
+  }
+
+  function handleZoomOut() {
+    mapInstance.current?.zoomOut({ duration: 300 })
+  }
+
   // Switch Layer Visibility
-  function handleLayerChange(layer: 'voyager' | 'satellite' | 'osm') {
+  function handleLayerChange(layer: MapLayer) {
     setActiveLayer(layer)
     const map = mapInstance.current
     if (!map) return
 
-    map.setLayoutProperty('voyager-layer', 'visibility', layer === 'voyager' ? 'visible' : 'none')
+    map.setLayoutProperty('maptiler-layer', 'visibility', layer === 'maptiler' ? 'visible' : 'none')
     map.setLayoutProperty('satellite-layer', 'visibility', layer === 'satellite' ? 'visible' : 'none')
+    map.setLayoutProperty('outdoor-layer', 'visibility', layer === 'outdoor' ? 'visible' : 'none')
     map.setLayoutProperty('osm-layer', 'visibility', layer === 'osm' ? 'visible' : 'none')
   }
 
@@ -385,8 +418,8 @@ export default function InteractiveCorridorMap({
     map.flyTo({
       center: truckPos,
       zoom: 11.5,
-      pitch: 45,
-      bearing: 25,
+      pitch: 0,
+      bearing: 0,
       duration: 1500,
     })
   }
@@ -400,24 +433,24 @@ export default function InteractiveCorridorMap({
       {!mapLoaded && (
         <div className="absolute inset-0 bg-slate-100/80 backdrop-blur-xs flex items-center justify-center gap-2 text-xs font-semibold text-slate-500 z-10 pointer-events-none">
           <span className="w-4 h-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
-          <span>Loading high-resolution satellite & road tiles…</span>
+          <span>Loading high-resolution MapTiler & satellite tiles…</span>
         </div>
       )}
 
       {/* Top Map Controls Overlay Bar */}
-      <div className="absolute top-3 left-3 z-20 flex flex-wrap items-center gap-1.5 bg-white/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-200 shadow-md text-xs">
+      <div className="absolute top-3 left-3 z-20 flex flex-wrap items-center gap-1.5 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-slate-200 shadow-md text-xs">
         {/* Layer Switcher */}
         <button
           type="button"
-          onClick={() => handleLayerChange('voyager')}
+          onClick={() => handleLayerChange('maptiler')}
           className={`px-2.5 py-1 rounded-lg font-semibold text-[11px] transition-all ${
-            activeLayer === 'voyager'
+            activeLayer === 'maptiler'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
-          title="Modern Voyager Street Map"
+          title="MapTiler Streets - Crystal Clear Roads, Cities & Highway Corridors"
         >
-          🗺️ Street
+          🗺️ MapTiler Streets
         </button>
 
         <button
@@ -428,9 +461,22 @@ export default function InteractiveCorridorMap({
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
-          title="Photorealistic Esri Satellite Imagery"
+          title="MapTiler Photorealistic Satellite Imagery"
         >
           🛰️ Satellite
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleLayerChange('outdoor')}
+          className={`px-2.5 py-1 rounded-lg font-semibold text-[11px] transition-all ${
+            activeLayer === 'outdoor'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+          title="MapTiler Outdoor / Topography Map"
+        >
+          🏞️ Outdoor
         </button>
 
         <button
@@ -441,7 +487,7 @@ export default function InteractiveCorridorMap({
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
-          title="OpenStreetMap Standard"
+          title="OpenStreetMap Standard (Fallback)"
         >
           🌍 OSM
         </button>
@@ -472,6 +518,36 @@ export default function InteractiveCorridorMap({
         <span className="text-[10px] font-mono text-slate-400 pl-1">
           z{zoomLevel}
         </span>
+      </div>
+
+      {/* Prominent On-Map Zoom In / Zoom Out Widget (Right Top) */}
+      <div className="absolute top-3 right-3 z-20 flex flex-col items-center bg-white/95 backdrop-blur-md rounded-xl border border-slate-200/90 shadow-lg overflow-hidden select-none">
+        <button
+          type="button"
+          onClick={handleZoomIn}
+          className="w-9 h-9 flex items-center justify-center text-slate-700 hover:text-blue-600 hover:bg-slate-50 font-bold text-xl active:bg-slate-100 transition-colors"
+          title="Zoom In (+)"
+        >
+          +
+        </button>
+        <div className="w-6 h-px bg-slate-200" />
+        <button
+          type="button"
+          onClick={handleZoomOut}
+          className="w-9 h-9 flex items-center justify-center text-slate-700 hover:text-blue-600 hover:bg-slate-50 font-bold text-xl active:bg-slate-100 transition-colors"
+          title="Zoom Out (−)"
+        >
+          −
+        </button>
+        <div className="w-6 h-px bg-slate-200" />
+        <button
+          type="button"
+          onClick={handleFitRoute}
+          className="w-9 h-9 flex items-center justify-center text-slate-700 hover:text-blue-600 hover:bg-slate-50 text-xs active:bg-slate-100 transition-colors"
+          title="Reset to Corridor View"
+        >
+          🎯
+        </button>
       </div>
 
       {/* Floating Highway Corridor Badge (Top Center) */}

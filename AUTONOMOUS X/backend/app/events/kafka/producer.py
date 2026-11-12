@@ -20,7 +20,7 @@ class KafkaEventProducer:
         self._fallback_listeners: dict[str, list[Callable[[KafkaEventEnvelope], Any]]] = {}
 
     async def start(self) -> None:
-        if not os.getenv("ENABLE_KAFKA", "true").lower() in ("true", "1", "yes"):
+        if os.getenv("ENABLE_KAFKA", "false").lower() not in ("true", "1", "yes"):
             logger.info("Kafka disabled via ENABLE_KAFKA=false; using in-memory bus")
             self._connected = False
             return
