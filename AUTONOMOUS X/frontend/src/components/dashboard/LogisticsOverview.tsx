@@ -328,13 +328,14 @@ export default function LogisticsOverview({ overview, onNavigateTracking }: Prop
           </div>
 
           {/* Search by order id */}
-          <div className="relative mb-4">
+          <div className="relative mb-4 flex items-center">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none z-10">🔍</span>
             <input
               type="text"
               placeholder="Search by order id, Date etc"
-              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+              style={{ paddingLeft: '34px', backgroundColor: '#f8fafc', color: '#1e293b' }}
+              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-none"
             />
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
           </div>
 
           <div className="text-[11px] font-semibold text-slate-500 mb-3">Recent Order Requests</div>

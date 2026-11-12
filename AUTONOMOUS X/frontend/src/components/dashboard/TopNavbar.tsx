@@ -23,8 +23,8 @@ export default function TopNavbar({
     <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-20">
       {/* Left Search Bar */}
       <div className="flex items-center gap-3 w-full max-w-md">
-        <div className="relative flex-1">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+        <div className="relative flex-1 flex items-center">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10 flex items-center justify-center">
             <svg width={16} height={16} style={{ width: 16, height: 16 }} className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -32,7 +32,8 @@ export default function TopNavbar({
           <input
             type="text"
             placeholder="Search by User id, User Name, Date etc"
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
+            style={{ paddingLeft: '42px', backgroundColor: '#f8fafc', color: '#1e293b' }}
+            className="w-full pl-11 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all shadow-none"
           />
         </div>
 
