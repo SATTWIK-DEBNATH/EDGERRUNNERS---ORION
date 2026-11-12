@@ -246,7 +246,7 @@ EDGERUNNERS/AUTONOMOUS X/
 
 ##  Contributing
 
-We welcome contributions to Orion Autonomous X! Whether you're adding new routing heuristics, expanding telemetry sensor formats, or improving the frontend interface:
+We welcome contributions to  Autonomous X! Whether you're adding new routing heuristics, expanding telemetry sensor formats, or improving the frontend interface:
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
