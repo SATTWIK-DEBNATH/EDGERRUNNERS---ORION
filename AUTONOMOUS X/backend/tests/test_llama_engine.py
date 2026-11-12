@@ -62,6 +62,17 @@ class TestLlamaEngine(unittest.IsolatedAsyncioTestCase):
         self.assertIn("geopolitical_uncertainty_analysis", data)
         self.assertIn("warehouse_selection_and_capacity", data)
 
+    def test_connection_endpoint(self):
+        app = create_app()
+        client = TestClient(app)
+        response = client.post("/api/ai/test-local-connection", json={
+            "endpoint_url": "http://127.0.0.1:11434"
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("status", data)
+        self.assertIn("message", data)
+
 
 if __name__ == "__main__":
     unittest.main()

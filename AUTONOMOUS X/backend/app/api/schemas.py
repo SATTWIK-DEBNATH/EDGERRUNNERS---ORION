@@ -67,3 +67,9 @@ class AIDispatchAnalysisRequest(BaseModel):
     priority: str = "Standard"
     selected_warehouse_id: str | None = None
     api_key: str | None = None
+    endpoint_url: str | None = None
+    model_name: str | None = None
+
+
+class TestConnectionRequest(BaseModel):
+    endpoint_url: str = "http://localhost:11434"

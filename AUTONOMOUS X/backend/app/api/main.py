@@ -7,7 +7,7 @@ import httpx
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.schemas import AIDispatchAnalysisRequest, AssistantQuery, CreateIncidentRequest, CreateOrderRequest, CreateSimulationRequest, StepRequest, TrainingRequest
+from app.api.schemas import AIDispatchAnalysisRequest, AssistantQuery, CreateIncidentRequest, CreateOrderRequest, CreateSimulationRequest, StepRequest, TestConnectionRequest, TrainingRequest
 from app.api.service import LogisticsService
 from app.api.ws_bridge import ws_bridge
 from app.auth.cedar import cedar_pep
@@ -172,9 +172,22 @@ def create_app(service: LogisticsService | None = None) -> FastAPI:
                 priority=request.priority,
                 custom_warehouse_id=request.selected_warehouse_id,
                 user_api_key=request.api_key,
+                endpoint_url=request.endpoint_url,
+                model_name=request.model_name,
             )
         except Exception as error:
             raise HTTPException(status_code=500, detail=str(error)) from error
+
+    @app.post("/api/ai/test-local-connection")
+    async def test_local_connection(request: TestConnectionRequest):
+        try:
+            return await llama_engine.test_connection(request.endpoint_url)
+        except Exception as error:
+            return {
+                "status": "error",
+                "message": f"Connection error: {str(error)}",
+                "detected_models": [],
+            }
 
     @app.get("/api/ai/candidate-warehouses")
     def get_candidate_warehouses():

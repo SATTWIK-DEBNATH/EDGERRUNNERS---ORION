@@ -48,6 +48,8 @@ export type AIDispatchRequest = {
   priority: string
   selected_warehouse_id?: string
   api_key?: string
+  endpoint_url?: string
+  model_name?: string
 }
 
 export type CandidateWarehouse = {
@@ -114,3 +116,9 @@ export const analyzeDispatchOrder = (data: AIDispatchRequest) =>
 
 export const getCandidateWarehouses = () =>
   request<CandidateWarehouse[]>('/api/ai/candidate-warehouses')
+
+export const testLocalConnection = (endpoint_url: string) =>
+  request<{ status: string; message: string; detected_models?: string[] }>('/api/ai/test-local-connection', {
+    method: 'POST',
+    body: JSON.stringify({ endpoint_url }),
+  })
