@@ -35,6 +35,7 @@ backend/.venv.relocated-stale/
 
 # Frontend build output
 frontend/dist/
+*.tsbuildinfo
 
 # Logs
 *.log

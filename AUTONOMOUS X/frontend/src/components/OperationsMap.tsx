@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Map as MapLibreMap, NavigationControl, type GeoJSONSource } from 'maplibre-gl'
 import type { Overview } from '../types'
 import { buildMapData } from '../mapData'
 import { configureMapLibreWorker } from '../mapWorker'
+import { getH3Heatmap } from '../api'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 configureMapLibreWorker()
@@ -12,6 +13,7 @@ type Props = { overview: Overview }
 export default function OperationsMap({ overview }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<InstanceType<typeof MapLibreMap> | null>(null)
+  const [showH3, setShowH3] = useState(false)
   const latestOverview = useRef(overview)
   latestOverview.current = overview
 
@@ -34,6 +36,40 @@ export default function OperationsMap({ overview }: Props) {
       const data = buildMapData(latestOverview.current)
       instance.addSource('routes', { type: 'geojson', data: data.routes })
       instance.addSource('entities', { type: 'geojson', data: data.entities })
+      instance.addSource('h3-hexagons', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+
+      // H3 Hexagon Heatmap layers
+      instance.addLayer({
+        id: 'h3-hex-fill',
+        type: 'fill',
+        source: 'h3-hexagons',
+        paint: {
+          'fill-color': [
+            'interpolate',
+            ['linear'],
+            ['get', 'count'],
+            1, 'rgba(255, 170, 51, 0.25)',
+            3, 'rgba(255, 110, 60, 0.45)',
+            5, 'rgba(255, 50, 50, 0.65)',
+          ],
+          'fill-opacity': 0.8,
+        },
+      })
+      instance.addLayer({
+        id: 'h3-hex-line',
+        type: 'line',
+        source: 'h3-hexagons',
+        paint: {
+          'line-color': '#e5b95c',
+          'line-width': 1.5,
+          'line-opacity': 0.8,
+        },
+      })
+
+      // Dynamic Routes and Assets layers
       instance.addLayer({ id: 'routes-line', type: 'line', source: 'routes', paint: { 'line-color': '#56d6a3', 'line-width': 3, 'line-opacity': 0.8 } })
       instance.addLayer({ id: 'entities-dot', type: 'circle', source: 'entities', paint: {
         'circle-radius': ['match', ['get', 'kind'], 'vehicle', 5, 'warehouse', 8, 'incident', 8, 4],
@@ -58,5 +94,54 @@ export default function OperationsMap({ overview }: Props) {
     else instance.once('load', update)
   }, [overview])
 
-  return <div className="map-wrap"><div className="map-canvas" ref={container} aria-label="Operations map" />{!overview.simulation && <div className="map-empty">Create a simulation to see live locations and routes.</div>}<div className="map-legend"><span><i className="dot wh" />Warehouse</span><span><i className="dot veh" />Vehicle</span><span><i className="dot inc" />Incident</span></div></div>
+  useEffect(() => {
+    const instance = map.current
+    if (!instance) return
+
+    const updateH3 = async () => {
+      const h3Source = instance.getSource('h3-hexagons') as GeoJSONSource | undefined
+      if (!h3Source) return
+
+      if (!showH3 || !overview.simulation?.id) {
+        h3Source.setData({ type: 'FeatureCollection', features: [] })
+        return
+      }
+
+      try {
+        const heatmap = await getH3Heatmap(overview.simulation.id)
+        if (heatmap?.geojson) {
+          h3Source.setData(heatmap.geojson as unknown as GeoJSON.GeoJSON)
+        }
+      } catch (err) {
+        console.warn('Could not load H3 heatmap data', err)
+      }
+    }
+
+    if (instance.getSource('h3-hexagons')) {
+      void updateH3()
+    } else {
+      instance.once('load', () => void updateH3())
+    }
+  }, [showH3, overview.simulation?.id])
+
+  return (
+    <div className="map-wrap">
+      <div className="map-canvas" ref={container} aria-label="Operations map" />
+      {!overview.simulation && (
+        <div className="map-empty">Create a simulation to see live locations and routes.</div>
+      )}
+      <div className="map-legend">
+        <span><i className="dot wh" />Warehouse</span>
+        <span><i className="dot veh" />Vehicle</span>
+        <span><i className="dot inc" />Incident</span>
+        <button
+          type="button"
+          className={`h3-toggle-btn ${showH3 ? 'active' : ''}`}
+          onClick={() => setShowH3((prev) => !prev)}
+        >
+          ⬡ H3 Spatial Heatmap {showH3 ? 'ON' : 'OFF'}
+        </button>
+      </div>
+    </div>
+  )
 }

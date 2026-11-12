@@ -8,6 +8,7 @@ from app.agents.demand_agent import DemandAgent
 from app.agents.fleet_agent import FleetAgent
 from app.agents.routing_agent import RoutingAgent
 from app.agents.warehouse_agent import WarehouseAgent
+from app.auth.cedar import CedarRequest, cedar_pep
 from app.domain.models import DeliveryLocation, Order, OrderStatus, Vehicle, Warehouse
 from app.events.bus import EventBus
 from app.events.contracts import LogisticsEvent
@@ -118,6 +119,22 @@ class CoordinatorAgent:
             or not route.feasible
         ):
             return self._reject(order, decisions, "coordinator", "candidate became infeasible before commit")
+
+        # Cedar Policy Authorization Gate
+        cedar_req = CedarRequest(
+            principal="Agent::Coordinator",
+            action="Action::assign_order",
+            resource=f"Order::{order.id}",
+            context={
+                "warehouse_id": warehouse.id,
+                "vehicle_id": vehicle.id,
+                "order_h3_cell": getattr(order, "h3_cell_r8", None),
+                "threat_level": "low",
+            },
+        )
+        auth_decision = cedar_pep.evaluate(cedar_req)
+        if auth_decision.decision != "ALLOW":
+            return self._reject(order, decisions, "cedar_authorization", auth_decision.reason)
 
         old_load = vehicle.load_kg
         stock_reserved = False

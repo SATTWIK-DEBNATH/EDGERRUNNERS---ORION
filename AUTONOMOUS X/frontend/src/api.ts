@@ -1,4 +1,4 @@
-import type { Overview, SimulationSummary } from './types'
+import type { CedarAuditRecord, Overview, SimulationSummary, StreamEvent, StreamStatus } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -24,3 +24,17 @@ export const createSimulation = () => request<{ id: string }>('/api/simulations'
   method: 'POST', body: JSON.stringify({ seed: 7, warehouse_count: 3, vehicle_count: 10, order_count: 20 }),
 })
 export const postJson = <T>(path: string, data: unknown) => request<T>(path, { method: 'POST', body: JSON.stringify(data) })
+export const getStreamStatus = () => request<StreamStatus>('/api/stream/status')
+export const getStreamEvents = () => request<StreamEvent[]>('/api/stream/events')
+export const getCedarAudit = () => request<CedarAuditRecord[]>('/api/cedar/audit')
+export const getH3Heatmap = (simId?: string) => request<{
+  geojson: {
+    type: 'FeatureCollection'
+    features: Array<{
+      type: 'Feature'
+      properties: { h3_index: string; count: number; center_lat: number; center_lng: number }
+      geometry: { type: 'Polygon'; coordinates: number[][][] }
+    }>
+  }
+  cells: { h3_index: string; count: number }[]
+}>(`/api/h3/heatmap${simId ? `?simulation_id=${encodeURIComponent(simId)}` : ''}`)

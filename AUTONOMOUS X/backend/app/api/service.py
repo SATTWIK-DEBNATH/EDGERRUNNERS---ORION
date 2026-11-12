@@ -195,6 +195,7 @@ class LogisticsService:
         if session is None:
             return {
                 "simulation": None, "orders": {"total": 0, "pending": 0, "assigned": 0, "in_transit": 0, "delivered": 0, "unfulfillable": 0, "fulfillment_rate": 0.0},
+                "orders_list": [],
                 "warehouses": [], "vehicles": [], "routes": [], "road_edges": [], "locations": [], "incidents": [],
                 "agent_activity": [], "delivery_timeline": [], "metrics": {"fleet_utilization": 0.0, "warehouse_workload": []},
             }
@@ -247,9 +248,18 @@ class LogisticsService:
             for decision in assignment.decisions:
                 agent_activity.append({"order_id": assignment.order_id, "agent": decision.agent_name, "accepted": decision.accepted, "reason": decision.reason})
         utilization = sum(vehicle.load_kg / vehicle.capacity_kg for vehicle in session.scenario.vehicles) / len(session.scenario.vehicles) if session.scenario.vehicles else 0.0
+        orders_list = [
+            {
+                "id": o.id, "location_id": o.location_id, "item_id": o.item_id,
+                "quantity": o.quantity, "weight_kg": o.weight_kg, "priority": o.priority,
+                "status": o.status.value, "warehouse_id": o.warehouse_id, "vehicle_id": o.vehicle_id,
+            }
+            for o in orders
+        ]
         return {
             "simulation": {"id": session.id, "seed": session.seed, "status": session.status, "simulated_time_s": session.engine.now, "routing_source": session.graph.source, "route_strategy": session.engine.route_strategy, "route_strategy_reason": session.engine.route_strategy_reason},
             "orders": {"total": len(orders), "pending": counts["pending"], "assigned": counts["assigned"], "in_transit": counts["in_transit"], "delivered": delivered, "unfulfillable": counts["unfulfillable"], "fulfillment_rate": fulfillment},
+            "orders_list": orders_list,
             "warehouses": wh_values, "vehicles": vehicles, "routes": routes, "road_edges": road_edges,
             "locations": [{"id": location.id, "latitude": location.latitude, "longitude": location.longitude} for location in locations.values()],
             "incidents": session.incidents, "agent_activity": agent_activity, "delivery_timeline": timeline,

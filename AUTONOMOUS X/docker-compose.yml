@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: ax-kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      CLUSTER_ID: "4L622n22Q6qyoaMm0qNfpw"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    mem_limit: 512m
+
+  flink-jm:
+    image: apache/flink:1.18-scala_2.12-java11
+    container_name: ax-flink-jm
+    command: jobmanager
+    ports:
+      - "8081:8081"
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jm
+        jobmanager.memory.process.size: 512m
+    deploy:
+      resources:
+        limits:
+          memory: 600m
+    mem_limit: 600m
+
+  flink-tm:
+    image: apache/flink:1.18-scala_2.12-java11
+    container_name: ax-flink-tm
+    command: taskmanager
+    depends_on:
+      - flink-jm
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jm
+        taskmanager.memory.process.size: 1024m
+        taskmanager.numberOfTaskSlots: 4
+    deploy:
+      resources:
+        limits:
+          memory: 1200m
+    mem_limit: 1200m
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: ax-clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    deploy:
+      resources:
+        limits:
+          memory: 1500m
+    mem_limit: 1500m
+
+  valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    container_name: ax-valhalla
+    ports:
+      - "8002:8002"
+    volumes:
+      - valhalla_tiles:/custom_files
+    environment:
+      use_tiles_ignore_pbf: "True"
+      tileset_name: "bengaluru"
+    deploy:
+      resources:
+        limits:
+          memory: 1200m
+    mem_limit: 1200m
+
+  timefold:
+    image: quay.io/timefold/timefold-solver:latest
+    container_name: ax-timefold
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 1200m
+    mem_limit: 1200m
+
+volumes:
+  clickhouse_data:
+  valhalla_tiles:
