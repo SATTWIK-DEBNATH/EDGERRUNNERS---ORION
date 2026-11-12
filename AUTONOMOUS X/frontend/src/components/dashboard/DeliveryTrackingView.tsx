@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Overview } from '../../types'
+import InteractiveCorridorMap from './InteractiveCorridorMap'
 
 type Props = {
   overview: Overview | null
@@ -459,123 +460,17 @@ Generated At    : ${new Date().toISOString()}
               </div>
             </div>
 
-            {/* Cartographic Road Map (Visual Corridor Jaipur -> Noida/Gurugram) */}
-            <div className="h-[520px] rounded-xl overflow-hidden relative border border-slate-200 bg-[#e5ece2]">
-              <svg className="w-full h-full" viewBox="0 0 800 650" preserveAspectRatio="xMidYMid slice">
-                <defs>
-                  {/* Terrain and park fills */}
-                  <pattern id="terrain-pattern-track" width="60" height="60" patternUnits="userSpaceOnUse">
-                    <circle cx="20" cy="20" r="1.5" fill="#cad5c2" />
-                    <circle cx="50" cy="45" r="1.5" fill="#cad5c2" />
-                  </pattern>
-                  <filter id="shadow-track">
-                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.2" />
-                  </filter>
-                </defs>
-
-                {/* Base Land Fill */}
-                <rect width="800" height="650" fill="#f4f1ea" />
-
-                {/* Greenery / Forest / Hilly terrain blocks */}
-                <path d="M 500,50 Q 620,120 720,80 L 800,160 L 800,0 L 500,0 Z" fill="#dce6d5" opacity="0.8" />
-                <path d="M 380,320 Q 440,360 480,440 Q 520,520 460,600 L 320,650 L 300,480 Z" fill="#d8e3d1" opacity="0.7" />
-                <path d="M 50,180 Q 140,240 180,350 Q 120,440 60,400 L 0,380 L 0,200 Z" fill="#e2ecd9" opacity="0.6" />
-
-                {/* Secondary arterial roads (yellow/orange highway network) */}
-                <path d="M 0,140 L 800,180" stroke="#fef08a" strokeWidth="6" fill="none" opacity="0.9" />
-                <path d="M 120,0 L 380,650" stroke="#fed7aa" strokeWidth="5" fill="none" opacity="0.8" />
-                <path d="M 300,650 L 750,100" stroke="#fed7aa" strokeWidth="5" fill="none" opacity="0.8" />
-                <path d="M 680,0 L 550,650" stroke="#fef08a" strokeWidth="5" fill="none" opacity="0.7" />
-                <path d="M 50,550 L 780,480" stroke="#fef08a" strokeWidth="4" fill="none" opacity="0.8" />
-
-                {/* Highway Corridor Line (Blue) matching Image 7 */}
-                {/* Path starting at Jaipur (bottom-left) winding up through Alwar, Bhiwadi, Gurugram to Noida (top-right) */}
-                <path
-                  d="M 270,520 L 340,490 L 410,430 L 460,370 L 470,300 L 500,240 L 550,180 L 610,140 L 680,105"
-                  stroke="#1d4ed8"
-                  strokeWidth="7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-                <path
-                  d="M 270,520 L 340,490 L 410,430 L 460,370 L 470,300 L 500,240 L 550,180 L 610,140 L 680,105"
-                  stroke="#60a5fa"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-
-                {/* City Labels & Area Markings matching Image 7 */}
-                {/* New Delhi */}
-                <g transform="translate(640, 70)">
-                  <text x="0" y="0" fontSize="14" fontWeight="bold" fill="#334155" textAnchor="middle">New Delhi</text>
-                  <text x="0" y="14" fontSize="12" fontWeight="bold" fill="#475569" textAnchor="middle">नई दिल्ली</text>
-                </g>
-
-                {/* Noida (Destination pin) */}
-                <g transform="translate(680, 105)">
-                  <circle cx="0" cy="0" r="10" fill="#2563eb" filter="url(#shadow-track)" />
-                  <circle cx="0" cy="0" r="4.5" fill="#ffffff" />
-                  <text x="14" y="5" fontSize="15" fontWeight="900" fill="#1e293b">Noida</text>
-                  <text x="14" y="20" fontSize="13" fontWeight="bold" fill="#475569">नोएडा</text>
-                </g>
-
-                {/* Gurugram */}
-                <g transform="translate(600, 175)">
-                  <text x="0" y="0" fontSize="14" fontWeight="800" fill="#334155" textAnchor="middle">Gurugram</text>
-                  <text x="0" y="14" fontSize="12" fontWeight="bold" fill="#475569" textAnchor="middle">गुरुग्राम</text>
-                </g>
-
-                {/* Rewari */}
-                <g transform="translate(530, 240)">
-                  <text x="0" y="0" fontSize="11" fontWeight="bold" fill="#64748b" textAnchor="middle">Rewari</text>
-                  <text x="0" y="12" fontSize="10" fill="#64748b" textAnchor="middle">रेवाड़ी</text>
-                </g>
-
-                {/* Alwar */}
-                <g transform="translate(560, 340)">
-                  <text x="0" y="0" fontSize="14" fontWeight="bold" fill="#1e293b" textAnchor="middle">Alwar</text>
-                  <text x="0" y="14" fontSize="12" fontWeight="bold" fill="#475569" textAnchor="middle">अलवर</text>
-                </g>
-
-                {/* Kotputli */}
-                <g transform="translate(420, 290)">
-                  <text x="0" y="0" fontSize="11" fontWeight="bold" fill="#64748b" textAnchor="middle">Kotputli</text>
-                  <text x="0" y="12" fontSize="10" fill="#64748b" textAnchor="middle">कोटपूतली</text>
-                </g>
-
-                {/* Bandikui */}
-                <g transform="translate(470, 420)">
-                  <text x="0" y="0" fontSize="11" fontWeight="bold" fill="#64748b" textAnchor="middle">Bandikui</text>
-                </g>
-
-                {/* Jaipur (Origin pin) */}
-                <g transform="translate(340, 480)">
-                  <text x="0" y="0" fontSize="18" fontWeight="900" fill="#0f172a" textAnchor="middle">Jaipur</text>
-                  <text x="0" y="18" fontSize="15" fontWeight="bold" fill="#334155" textAnchor="middle">जयपुर</text>
-                </g>
-
-                {/* Kishangarh (Current active vehicle position) */}
-                <g transform="translate(270, 520)">
-                  {/* Pulse ring */}
-                  <circle cx="0" cy="0" r="22" fill="#3b82f6" opacity="0.25" className="animate-ping" />
-                  <circle cx="0" cy="0" r="14" fill="#2563eb" filter="url(#shadow-track)" />
-                  <path d="M -6,-6 L 6,-6 L 0,7 Z" fill="#ffffff" />
-                  <text x="-8" y="28" fontSize="11" fontWeight="bold" fill="#1e293b" textAnchor="middle">Kishangarh</text>
-                  <text x="-8" y="40" fontSize="10" fill="#475569" textAnchor="middle">किशनगढ़</text>
-                </g>
-
-                {/* Animated truck icon travelling on route */}
-                <g transform="translate(470, 300)">
-                  <circle cx="0" cy="0" r="12" fill="#1d4ed8" filter="url(#shadow-track)" />
-                  <text x="0" y="4" fontSize="11" fill="#ffffff" textAnchor="middle">🚚</text>
-                </g>
-              </svg>
-
+            {/* Real Interactive MapLibre Highway Corridor Map */}
+            <InteractiveCorridorMap
+              shipmentId={activeVehicle.id}
+              vehiclePlate={activeVehicle.reg}
+              currentSpeed={speedJitter}
+              currentLocationName={activeVehicle.currentHighway}
+              activeHighway="NH48 / NE4 Freight Corridor"
+              heightClass="h-[520px]"
+            >
               {/* Bottom Telemetry Floating Overlay Bar (Exact match to Image 7) */}
-              <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md rounded-2xl p-3 border border-slate-200 shadow-lg grid grid-cols-3 gap-y-2 gap-x-4 text-xs">
+              <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md rounded-2xl p-3 border border-slate-200 shadow-lg grid grid-cols-3 gap-y-2 gap-x-4 text-xs z-10 pointer-events-auto">
                 {/* Metric 1: Location */}
                 <div className="flex items-center gap-2">
                   <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
@@ -642,7 +537,7 @@ Generated At    : ${new Date().toISOString()}
                   </div>
                 </div>
               </div>
-            </div>
+            </InteractiveCorridorMap>
           </div>
         </div>
 

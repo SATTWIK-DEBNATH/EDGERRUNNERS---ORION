@@ -117,3 +117,4 @@ export default function GuidedTour({ onSelectTab, onCloseTour }: Props) {
     </div>
   )
 }
+
