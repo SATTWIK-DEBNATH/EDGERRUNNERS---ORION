@@ -7,10 +7,11 @@ import httpx
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.schemas import AssistantQuery, CreateIncidentRequest, CreateOrderRequest, CreateSimulationRequest, StepRequest, TrainingRequest
+from app.api.schemas import AIDispatchAnalysisRequest, AssistantQuery, CreateIncidentRequest, CreateOrderRequest, CreateSimulationRequest, StepRequest, TrainingRequest
 from app.api.service import LogisticsService
 from app.api.ws_bridge import ws_bridge
 from app.auth.cedar import cedar_pep
+from app.intelligence.llama_client import llama_engine
 from app.spatial.h3_indexer import H3SpatialIndex
 from app.spatial.h3_utils import RESOLUTION_URBAN, demand_aggregation, h3_geojson_feature_collection, h3_heatmap_data
 from app.intelligence.forecasting.demand import evaluate_forecasts, generate_demand_history
@@ -158,6 +159,27 @@ def create_app(service: LogisticsService | None = None) -> FastAPI:
         except KeyError as error:
             raise HTTPException(status_code=404, detail=str(error)) from error
         return _order_json(order)
+
+    @app.post("/api/ai/dispatch-analysis")
+    async def analyze_dispatch_order(request: AIDispatchAnalysisRequest):
+        try:
+            return await llama_engine.analyze_shipping_order(
+                origin=request.origin,
+                destination=request.destination,
+                item_name=request.item_name,
+                quantity=request.quantity,
+                weight_kg=request.weight_kg,
+                priority=request.priority,
+                custom_warehouse_id=request.selected_warehouse_id,
+                user_api_key=request.api_key,
+            )
+        except Exception as error:
+            raise HTTPException(status_code=500, detail=str(error)) from error
+
+    @app.get("/api/ai/candidate-warehouses")
+    def get_candidate_warehouses():
+        from app.intelligence.llama_client import DEFAULT_WAREHOUSES
+        return DEFAULT_WAREHOUSES
 
     @app.get("/api/warehouses")
     def list_warehouses(simulation_id: str | None = Query(default=None)):

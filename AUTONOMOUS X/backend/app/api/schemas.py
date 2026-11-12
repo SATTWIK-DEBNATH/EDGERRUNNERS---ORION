@@ -56,3 +56,14 @@ class TrainingRequest(StrictModel):
     seed: int = 7
     timesteps: int = Field(default=512, ge=32, le=4096)
     episodes: int = Field(default=32, ge=1, le=256)
+
+
+class AIDispatchAnalysisRequest(BaseModel):
+    origin: str = "Mumbai Port JNPT, India"
+    destination: str = "Jaipur Special Economic Zone, India"
+    item_name: str = "High-Precision Machine Parts"
+    quantity: int = 1
+    weight_kg: float = 250.0
+    priority: str = "Standard"
+    selected_warehouse_id: str | None = None
+    api_key: str | None = None

@@ -9,12 +9,11 @@ import TopNavbar from './components/dashboard/TopNavbar'
 import LogisticsOverview from './components/dashboard/LogisticsOverview'
 import DeliveryTrackingView from './components/dashboard/DeliveryTrackingView'
 import CreateOrderModal from './components/dashboard/CreateOrderModal'
+import AIDispatchEngine from './components/dashboard/AIDispatchEngine'
 
 const Analytics = lazy(() => import('./components/Analytics'))
 const OperationsMap = lazy(() => import('./components/OperationsMap'))
 const StreamMonitor = lazy(() => import('./components/StreamMonitor'))
-const OrdersTable = lazy(() => import('./components/OrdersTable'))
-const FleetPanel = lazy(() => import('./components/FleetPanel'))
 const CedarAuditPanel = lazy(() => import('./components/CedarAuditPanel'))
 
 export default function App({ initialView }: { initialView?: 'landing' | 'dashboard' } = {}) {
@@ -137,7 +136,7 @@ export default function App({ initialView }: { initialView?: 'landing' | 'dashbo
     } finally { setActionBusy(false); setLoading(false) }
   }
 
-  async function control(action: 'start' | 'pause' | 'resume' | 'reset' | 'step') {
+  async function _control(action: 'start' | 'pause' | 'resume' | 'reset' | 'step') {
     if (!activeId) return
     setActionBusy(true)
     try {
@@ -153,6 +152,7 @@ export default function App({ initialView }: { initialView?: 'landing' | 'dashbo
       setError(reason instanceof Error ? reason.message : `Could not ${action} simulation`)
     } finally { setActionBusy(false) }
   }
+  void _control
 
   if (view === 'landing') {
     return (
@@ -218,8 +218,6 @@ export default function App({ initialView }: { initialView?: 'landing' | 'dashbo
     )
   }
 
-  const status = simulation?.status ?? 'idle'
-
   return (
     <div className="flex bg-[#f8fafc] min-h-screen font-sans text-slate-800 antialiased">
       {/* Modern Icon Sidebar */}
@@ -245,7 +243,7 @@ export default function App({ initialView }: { initialView?: 'landing' | 'dashbo
             setActiveId(id)
             void refreshOverview(id)
           }}
-          onOpenCreateOrder={() => setCreateOrderOpen(true)}
+          onOpenCreateOrder={() => setDashboardTab('dispatch')}
           onReturnLanding={() => setView('landing')}
         />
 
@@ -273,70 +271,11 @@ export default function App({ initialView }: { initialView?: 'landing' | 'dashbo
             <DeliveryTrackingView overview={overview} />
           )}
 
-          {/* Tab 3: Orders Directory */}
-          {dashboardTab === 'orders' && (
-            <div className="p-6 bg-[#f8fafc] min-h-[calc(100vh-64px)]">
-              <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-800">Orders Management</h2>
-                    <p className="text-xs text-slate-500">Live order inventory, routing status, and dispatch queue</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCreateOrderOpen(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-blue-500/20 transition-all flex items-center gap-2"
-                  >
-                    <span>+ Create Order</span>
-                  </button>
-                </div>
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                  <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading orders…</div>}>
-                    <OrdersTable orders={overview?.orders_list} />
-                  </Suspense>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 4: Fleet Panel & Geo-Map */}
-          {dashboardTab === 'fleet' && (
-            <div className="p-6 bg-[#f8fafc] min-h-[calc(100vh-64px)]">
-              <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-800">Autonomous Fleet & Capacity</h2>
-                    <p className="text-xs text-slate-500">Telemetry, vehicle health, payload utilization, and active assignments</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {status === 'created' && (
-                      <button className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all" onClick={() => void control('start')} disabled={actionBusy}>Start Fleet Simulation</button>
-                    )}
-                    {status === 'running' && (
-                      <button className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-semibold shadow-sm transition-all" onClick={() => void control('pause')} disabled={actionBusy}>Pause Fleet</button>
-                    )}
-                    {status === 'paused' && (
-                      <button className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all" onClick={() => void control('resume')} disabled={actionBusy}>Resume Fleet</button>
-                    )}
-                    {status !== 'completed' && (
-                      <button className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all" onClick={() => void control('step')} disabled={actionBusy}>Step +10 min</button>
-                    )}
-                    <button className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-semibold transition-all" onClick={() => void control('reset')} disabled={actionBusy}>↻ Reset</button>
-                  </div>
-                </div>
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                  <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading fleet…</div>}>
-                    <FleetPanel vehicles={overview.vehicles} />
-                  </Suspense>
-                </div>
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                  <h3 className="text-sm font-bold text-slate-800 mb-3">Urban Logistics Geo-Map</h3>
-                  <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading map…</div>}>
-                    <OperationsMap overview={overview} />
-                  </Suspense>
-                </div>
-              </div>
-            </div>
+          {/* Tab 2: AI Dispatch & LLaMA 3.1 8B Tech Engine */}
+          {dashboardTab === 'dispatch' && (
+            <AIDispatchEngine
+              onNavigateTracking={() => setDashboardTab('tracking')}
+            />
           )}
 
           {/* Tab 5: Real-time Streaming Monitor & Policy Auditing */}
@@ -381,13 +320,11 @@ export default function App({ initialView }: { initialView?: 'landing' | 'dashbo
           )}
 
           {/* Hidden map layer for DOM testing compatibility */}
-          {dashboardTab !== 'fleet' && (
-            <div className="hidden" aria-hidden="true">
-              <Suspense fallback={null}>
-                <OperationsMap overview={overview} />
-              </Suspense>
-            </div>
-          )}
+          <div className="hidden" aria-hidden="true">
+            <Suspense fallback={null}>
+              <OperationsMap overview={overview} />
+            </Suspense>
+          </div>
         </main>
 
         {/* Create Order Modal */}
