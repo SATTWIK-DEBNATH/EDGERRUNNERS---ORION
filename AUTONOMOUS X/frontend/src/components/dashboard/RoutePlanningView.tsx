@@ -1,0 +1,594 @@
+import { useState } from 'react'
+
+type VehicleRouteItem = {
+  id: string
+  plate: string
+  routeText: string
+  maxLoadTon: number
+}
+
+type RouteRecord = {
+  routeId: string
+  corridor: string
+  vehiclesCount: number
+  estimateTime: string
+  vehicles: {
+    shipmentId: string
+    plate: string
+    estimateTime: string
+  }[]
+  description: string
+  startingPoint: string
+  stops: string[]
+  destination: string
+  durationAvg: string
+  distanceCoveredKm: number
+}
+
+const INITIAL_ROUTES: RouteRecord[] = [
+  {
+    routeId: 'ROUTEAA001',
+    corridor: 'Mumbai ─── Delhi',
+    vehiclesCount: 22,
+    estimateTime: '6 Hrs',
+    vehicles: [
+      { shipmentId: 'ID: SHIPID01234', plate: 'DL04MP0123', estimateTime: 'Estimate Time: 6 Hrs' },
+      { shipmentId: 'ID: SHIPID01234', plate: 'DL04MP0123', estimateTime: 'Estimate Time: 6 Hrs' },
+      { shipmentId: 'ID: SHIPID01234', plate: 'DL04MP0123', estimateTime: 'Estimate Time: 6 Hrs' },
+    ],
+    description:
+      "Raj Industries is one of the leading FMCG companies in northern India dealing in Personal and Home Care products. The company's leading product 'Raj Super White Laundry Bar' commands a high market share and is trusted by around 1,50,000 retail stores all over the country.",
+    startingPoint: 'Village Pawa, GT Road, Near Civil Airport, Raj Industries, Ludhiana, Punjab 141120, IN',
+    stops: [
+      'Village Pawa, GT Road, Near Civil Airport, Raj Industries, Ludhiana, Punjab 141120, IN',
+      'Village Pawa, GT Road, Near Civil Airport, Raj Industries, Ludhiana, Punjab 141120, IN',
+      'Village Pawa, GT Road, Near Civil Airport, Raj Industries, Ludhiana, Punjab 141120, IN',
+    ],
+    destination: 'Village Pawa, GT Road, Near Civil Airport, Raj Industries, Ludhiana, Punjab 141120, IN',
+    durationAvg: '6 Hrs and 42 Mins Avg',
+    distanceCoveredKm: 380,
+  },
+  {
+    routeId: 'ROUTEAA002',
+    corridor: 'Mumbai ─── Delhi',
+    vehiclesCount: 18,
+    estimateTime: '6 Hrs 42 Mins',
+    vehicles: [
+      { shipmentId: 'ID: SHIPID01234', plate: 'DL04MP0123', estimateTime: 'Estimate Time: 6 Hrs' },
+      { shipmentId: 'ID: SHIPID01234', plate: 'DL04MP0123', estimateTime: 'Estimate Time: 6 Hrs' },
+      { shipmentId: 'ID: SHIPID01234', plate: 'DL04MP0123', estimateTime: 'Estimate Time: 6 Hrs' },
+    ],
+    description:
+      'Autonomous National Freight Corridor segment bypassing high-density urban bottlenecks. Integrated with Western Dedicated Freight Corridor automated transshipment hubs.',
+    startingPoint: 'JNPT Maritime Port Terminal, Navi Mumbai, Maharashtra 400707, IN',
+    stops: [
+      'Jaipur Logistics Terminal, Sitapura SEZ, Rajasthan 302022, IN',
+      'Rewari Intermodal Freight Rail Interchange, Haryana 123401, IN',
+      'Bhiwadi Express Highway Freight Hub, Rajasthan 301019, IN',
+    ],
+    destination: 'Noida Logistics Gateway Hub, Sector 153, Uttar Pradesh 201310, IN',
+    durationAvg: '6 Hrs and 42 Mins Avg',
+    distanceCoveredKm: 380,
+  },
+]
+
+const INITIAL_VEHICLES: VehicleRouteItem[] = [
+  { id: '#ShipID0123', plate: 'DL04MP7045', routeText: 'Mumbai ─── Delhi', maxLoadTon: 6.5 },
+  { id: '#ShipID0124', plate: 'DL04MP7045', routeText: 'Mumbai ─── Delhi', maxLoadTon: 6.5 },
+  { id: '#ShipID0125', plate: 'DL04MP7045', routeText: 'Mumbai ─── Delhi', maxLoadTon: 6.5 },
+  { id: '#ShipID0126', plate: 'DL04MP7045', routeText: 'Mumbai ─── Delhi', maxLoadTon: 6.5 },
+  { id: '#ShipID0127', plate: 'DL04MP7045', routeText: 'Mumbai ─── Delhi', maxLoadTon: 6.5 },
+  { id: '#ShipID0128', plate: 'DL04MP7045', routeText: 'Mumbai ─── Delhi', maxLoadTon: 6.5 },
+]
+
+export default function RoutePlanningView() {
+  const [routes, setRoutes] = useState<RouteRecord[]>(INITIAL_ROUTES)
+  const [selectedRoute, setSelectedRoute] = useState<RouteRecord | null>(null)
+  const [routeSearch, setRouteSearch] = useState('')
+  const [vehicleSearch, setVehicleSearch] = useState('')
+  const [vehicles] = useState<VehicleRouteItem[]>(INITIAL_VEHICLES)
+
+  // Modal for + New Route
+  const [showNewRouteModal, setShowNewRouteModal] = useState(false)
+  const [newRouteId, setNewRouteId] = useState('')
+  const [newOrigin, setNewOrigin] = useState('')
+  const [newDestination, setNewDestination] = useState('')
+  const [newDuration, setNewDuration] = useState('')
+
+  const [notification, setNotification] = useState('')
+
+  const filteredRoutes = routes.filter((r) =>
+    r.routeId.toLowerCase().includes(routeSearch.toLowerCase()) ||
+    r.corridor.toLowerCase().includes(routeSearch.toLowerCase())
+  )
+
+  const filteredVehicles = vehicles.filter((v) =>
+    v.id.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
+    v.plate.toLowerCase().includes(vehicleSearch.toLowerCase())
+  )
+
+  function handleCreateRoute(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newRouteId || !newOrigin || !newDestination) return
+
+    const newRecord: RouteRecord = {
+      routeId: newRouteId.toUpperCase(),
+      corridor: `${newOrigin} ─── ${newDestination}`,
+      vehiclesCount: 1,
+      estimateTime: newDuration || '5 Hrs',
+      vehicles: [
+        { shipmentId: 'ID: SHIPID09999', plate: 'DL04MP9999', estimateTime: newDuration || '5 Hrs' },
+      ],
+      description: `Newly planned autonomous routing corridor connecting ${newOrigin} directly to ${newDestination}.`,
+      startingPoint: `${newOrigin} Express Gateway`,
+      stops: [`${newOrigin} Sub-Station 01`, `${newDestination} Sub-Station 02`],
+      destination: `${newDestination} Freight Terminal`,
+      durationAvg: newDuration || '5 Hrs Avg',
+      distanceCoveredKm: 340,
+    }
+
+    setRoutes([newRecord, ...routes])
+    setShowNewRouteModal(false)
+    setNewRouteId('')
+    setNewOrigin('')
+    setNewDestination('')
+    setNewDuration('')
+    setNotification(`Successfully added ${newRecord.routeId} to route management.`)
+    setTimeout(() => setNotification(''), 4000)
+  }
+
+  return (
+    <div className="p-6 bg-[#f8fafc] min-h-[calc(100vh-64px)] text-slate-800 space-y-4">
+      {notification && (
+        <div className="p-3 bg-blue-50 border border-blue-200 text-blue-700 text-xs rounded-xl flex items-center justify-between">
+          <span>✓ {notification}</span>
+          <button type="button" onClick={() => setNotification('')} className="font-bold">✕</button>
+        </div>
+      )}
+
+      {/* Header Bar */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-base font-bold text-slate-900 tracking-tight">Route Planning</h1>
+        <button
+          type="button"
+          onClick={() => setShowNewRouteModal(true)}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5"
+        >
+          <span>+</span> New Route
+        </button>
+      </div>
+
+      {/* Main Grid: Left 8 Cols (Map + Overlays) & Right 4 Cols (Routes list or Route Details) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* ============================================================== */}
+        {/* LEFT MAP CONTAINER (8 Cols)                                    */}
+        {/* ============================================================== */}
+        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative min-h-[720px] flex flex-col justify-between">
+          {/* Real Highway Map Graphic Background (Jaipur -> Noida/Delhi) */}
+          <div className="absolute inset-0 bg-[#f4f7f4] z-0 overflow-hidden">
+            {/* SVG Cartographic Map representing the Jaipur - Alwar - Bhiwadi - Gurugram - Noida corridor */}
+            <svg
+              className="w-full h-full object-cover"
+              viewBox="0 0 1000 800"
+              preserveAspectRatio="xMidYMid slice"
+            >
+              {/* Regional terrain shading */}
+              <rect width="1000" height="800" fill="#f8faf5" />
+              <path d="M 0,200 Q 300,180 500,220 T 1000,180 L 1000,0 L 0,0 Z" fill="#eff6ee" />
+              <path d="M 200,600 Q 400,550 700,650 T 1000,600 L 1000,800 L 200,800 Z" fill="#f2f8f0" />
+
+              {/* State/District Border contours */}
+              <path
+                d="M 150,0 Q 350,300 450,500 T 600,800"
+                fill="none"
+                stroke="#e2e8f0"
+                strokeWidth="2"
+                strokeDasharray="6,4"
+              />
+
+              {/* Connecting secondary roads */}
+              <path d="M 200,300 L 450,380 L 600,280" fill="none" stroke="#cbd5e1" strokeWidth="2.5" />
+              <path d="M 300,550 L 520,440 L 750,500" fill="none" stroke="#cbd5e1" strokeWidth="2.5" />
+              <path d="M 500,200 L 620,180 L 800,240" fill="none" stroke="#cbd5e1" strokeWidth="3" />
+
+              {/* Main Express National Corridor NH04 / Delhi-Mumbai Expressway Route Line */}
+              {/* From Jaipur (bottom left) to Noida (top right) */}
+              <path
+                d="M 350,620 Q 450,550 490,440 T 540,300 Q 580,240 640,190"
+                fill="none"
+                stroke="#2563eb"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Highway Route Glow */}
+              <path
+                d="M 350,620 Q 450,550 490,440 T 540,300 Q 580,240 640,190"
+                fill="none"
+                stroke="#60a5fa"
+                strokeWidth="12"
+                strokeOpacity="0.3"
+                strokeLinecap="round"
+              />
+
+              {/* Landmark Geographic Labels */}
+              <text x="635" y="150" fontSize="18" fontWeight="bold" fill="#0f172a">New Delhi नई दिल्ली</text>
+              <text x="645" y="175" fontSize="16" fontWeight="bold" fill="#1e293b">Noida नोएडा</text>
+              <text x="520" y="220" fontSize="17" fontWeight="bold" fill="#0f172a">Gurugram गुरुग्राम</text>
+              <text x="470" y="275" fontSize="13" fontWeight="600" fill="#475569">Bhiwadi भिवाड़ी</text>
+              <text x="495" y="380" fontSize="16" fontWeight="bold" fill="#1e293b">Alwar अलवर</text>
+              <text x="410" y="470" fontSize="13" fontWeight="600" fill="#475569">Kotputli कोटपूतली</text>
+              <text x="460" y="550" fontSize="13" fontWeight="600" fill="#475569">Dausa दौसा</text>
+              <text x="320" y="615" fontSize="20" fontWeight="bold" fill="#0f172a">Jaipur जयपुर</text>
+              <text x="350" y="700" fontSize="13" fontWeight="600" fill="#475569">Chaksu चाकसू</text>
+
+              {/* Highway Badges */}
+              <rect x="555" y="245" width="36" height="18" rx="4" fill="#facc15" stroke="#ca8a04" strokeWidth="1" />
+              <text x="562" y="258" fontSize="10" fontWeight="bold" fill="#713f12">NE4</text>
+
+              <rect x="390" y="495" width="36" height="18" rx="4" fill="#facc15" stroke="#ca8a04" strokeWidth="1" />
+              <text x="397" y="508" fontSize="10" fontWeight="bold" fill="#713f12">148</text>
+
+              {/* Origin Marker (Jaipur) */}
+              <g transform="translate(350, 620)">
+                <circle r="14" fill="#1e40af" />
+                <circle r="6" fill="#ffffff" />
+                <text x="18" y="5" fontSize="11" fontWeight="bold" fill="#1e40af" filter="drop-shadow(0 1px 2px white)">
+                  Origin Hub: Jaipur SEZ
+                </text>
+              </g>
+
+              {/* Destination Pin (Noida Gateway) */}
+              <g transform="translate(640, 190)">
+                <path d="M 0,0 C -12,-24 -12,-36 0,-36 C 12,-36 12,-24 0,0 Z" fill="#2563eb" />
+                <circle cx="0" cy="-26" r="5" fill="#ffffff" />
+                <text x="16" y="-18" fontSize="12" fontWeight="bold" fill="#1e40af" filter="drop-shadow(0 1px 2px white)">
+                  Destination: Noida Logistics Hub
+                </text>
+              </g>
+
+              {/* Live Truck Marker traveling along route */}
+              <g transform="translate(490, 440)">
+                <circle r="16" fill="#3b82f6" fillOpacity="0.25" className="animate-ping" />
+                <rect x="-14" y="-14" width="28" height="28" rx="8" fill="#1d4ed8" stroke="#ffffff" strokeWidth="2" />
+                <text x="-7" y="4" fontSize="12" fill="#ffffff">🚛</text>
+              </g>
+            </svg>
+          </div>
+
+          {/* Overlaid Vehicles Card List (Left Side of Map) */}
+          <div className="relative z-10 m-4 w-72 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-3.5 shadow-md space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800">Vehicles</span>
+              <span className="text-[10px] text-slate-400 font-medium">{filteredVehicles.length} available</span>
+            </div>
+
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+              <input
+                type="text"
+                placeholder="Search by Shipment ID, No."
+                value={vehicleSearch}
+                onChange={(e) => setVehicleSearch(e.target.value)}
+                className="w-full pl-7 pr-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-700 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Vehicle Card list */}
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {filteredVehicles.map((vh, i) => (
+                <div key={i} className="p-2.5 rounded-xl border border-slate-200/80 bg-white hover:border-blue-300 transition-all text-xs">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px]">
+                      <span className="text-blue-600">🚛</span>
+                      <span>{vh.id}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNotification(`Selected route adjustment for vehicle ${vh.id}`)
+                        setTimeout(() => setNotification(''), 3000)
+                      }}
+                      className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 px-2 py-0.5 rounded border border-blue-200 hover:bg-blue-50 transition-colors"
+                    >
+                      Change Route
+                    </button>
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-mono">{vh.plate}</div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-600 mt-1">
+                    <span>{vh.routeText}</span>
+                    <span className="text-slate-400">Max Ld. {vh.maxLoadTon} Ton</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Overlaid Route Timeline Banner (Bottom of Map) */}
+          <div className="relative z-10 m-4 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-4 shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Stepper info */}
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-blue-600" />
+                <span className="text-slate-400 text-[10px]">Departure</span>
+                <span className="font-bold text-slate-800">Delhi</span>
+              </div>
+              <span className="text-slate-300">──</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full border border-slate-400 bg-white" />
+                <span className="text-slate-400 text-[10px]">Stop 01</span>
+                <span className="font-medium text-slate-700">Chandigarh</span>
+              </div>
+              <span className="text-slate-300">──</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full border border-slate-400 bg-white" />
+                <span className="text-slate-400 text-[10px]">Stop 02</span>
+                <span className="font-medium text-slate-700">Lonavala</span>
+              </div>
+              <span className="text-slate-300">──</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-slate-400 text-[10px]">Arrival</span>
+                <span className="font-bold text-slate-800">Mumbai</span>
+              </div>
+            </div>
+
+            {/* Thumbnail */}
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-10 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                <img
+                  src="/assets/order_minimap.png"
+                  alt="Minimap"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = 'none' }}
+                />
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-500">Route A002</div>
+                <div className="text-xs font-bold text-slate-800">13 Hrs 42 Mins Avg</div>
+              </div>
+            </div>
+
+            {/* Stacked Color Bar Chart */}
+            <div className="w-full md:w-56 space-y-1">
+              <div className="text-[9px] font-semibold text-slate-400 text-right">Average Time Per Day</div>
+              <div className="w-full h-4 rounded-md overflow-hidden flex text-[8px] font-bold text-white text-center leading-4">
+                <div className="bg-blue-200 text-blue-900 w-[25%]" title="Delhi: 3 Hrs">3 Hrs</div>
+                <div className="bg-red-500 w-[40%]" title="Chandigarh: 5 Hrs">5 Hrs</div>
+                <div className="bg-blue-600 w-[35%]" title="Lonavala: 4 Hrs">4 Hrs</div>
+              </div>
+              <div className="flex justify-between text-[8px] text-slate-400">
+                <span>Delhi</span>
+                <span>Chandigarh</span>
+                <span>Lonavala</span>
+                <span>Mumbai</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================================== */}
+        {/* RIGHT PANEL: Routes List (Mode A) OR Route Detail (Mode B)     */}
+        {/* ============================================================== */}
+        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          {/* MODE B: Route Information Detail View (Image 5) */}
+          {selectedRoute ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-800">Route Information</h3>
+                <button
+                  type="button"
+                  onClick={() => setSelectedRoute(null)}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  ‹ BACK
+                </button>
+              </div>
+
+              {/* Route Heading with Direction Icon */}
+              <div className="flex items-center gap-2.5 pt-1">
+                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                  ↱
+                </div>
+                <h2 className="text-base font-bold text-slate-900">{selectedRoute.routeId}</h2>
+              </div>
+
+              {/* Detail Card Container matching Image 5 */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-4 text-xs">
+                {/* Description */}
+                <div>
+                  <h4 className="font-bold text-slate-900 text-xs mb-1">Description</h4>
+                  <p className="text-slate-600 leading-relaxed text-[11px]">
+                    {selectedRoute.description}
+                  </p>
+                </div>
+
+                {/* Starting Point */}
+                <div>
+                  <h4 className="font-bold text-slate-900 text-[11px] mb-0.5">Starting Point</h4>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    {selectedRoute.startingPoint}
+                  </p>
+                </div>
+
+                {/* Stops */}
+                {selectedRoute.stops.map((stop, sIdx) => (
+                  <div key={sIdx}>
+                    <h4 className="font-bold text-slate-900 text-[11px] mb-0.5">Stop {String(sIdx + 1).padStart(2, '0')}</h4>
+                    <p className="text-slate-600 text-[11px] leading-relaxed">{stop}</p>
+                  </div>
+                ))}
+
+                {/* Destination */}
+                <div>
+                  <h4 className="font-bold text-slate-900 text-[11px] mb-0.5">Destination</h4>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">{selectedRoute.destination}</p>
+                </div>
+
+                {/* Duration & Distance */}
+                <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-3">
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-[11px] mb-0.5">Duration</h4>
+                    <p className="text-slate-700 font-medium text-[11px]">{selectedRoute.durationAvg}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-[11px] mb-0.5">Distance Covered</h4>
+                    <p className="text-slate-700 font-medium text-[11px]">{selectedRoute.distanceCoveredKm} KMs</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* MODE A: Routes List View (Image 3) */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900">Routes</h3>
+                <div className="flex items-center gap-1.5 text-slate-400">
+                  <button type="button" className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 hover:text-slate-700 text-xs" title="Refresh">
+                    🔄
+                  </button>
+                  <button type="button" className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 hover:text-slate-700 text-xs" title="History">
+                    🕒
+                  </button>
+                </div>
+              </div>
+
+              {/* Search by Route No */}
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search by Route No"
+                  value={routeSearch}
+                  onChange={(e) => setRouteSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Grouped Routes List */}
+              <div className="space-y-4 max-h-[660px] overflow-y-auto pr-1">
+                {filteredRoutes.map((rt) => (
+                  <div key={rt.routeId} className="space-y-2 pb-3 border-b border-slate-100 last:border-b-0">
+                    <div className="flex items-center justify-between">
+                      <div className="font-bold text-xs text-slate-900">{rt.routeId}</div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRoute(rt)}
+                        className="text-[11px] font-semibold text-blue-600 hover:text-blue-800"
+                      >
+                        View More
+                      </button>
+                    </div>
+                    <div className="text-[10px] text-slate-500">{rt.corridor}</div>
+
+                    {/* Sub vehicle cards */}
+                    <div className="space-y-2 mt-2">
+                      {rt.vehicles.map((vh, vIdx) => (
+                        <div key={vIdx} className="p-2.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-white hover:border-slate-300 transition-all text-xs flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-slate-400 text-xs">📄</span>
+                            <div>
+                              <div className="font-bold text-slate-800 text-[11px]">{vh.shipmentId}</div>
+                              <div className="text-[10px] text-slate-500 font-mono">{vh.plate}</div>
+                            </div>
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-medium">{vh.estimateTime}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-1 flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+                      <span>🚚</span>
+                      <span>{rt.vehiclesCount}+ Vehicles</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal: + New Route */}
+      {showNewRouteModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-slate-900">Create New Freight Route</h3>
+              <button type="button" onClick={() => setShowNewRouteModal(false)} className="text-slate-400 hover:text-slate-700 font-bold">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateRoute} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Route ID</label>
+                <input
+                  type="text"
+                  placeholder="e.g. ROUTEAA003"
+                  value={newRouteId}
+                  onChange={(e) => setNewRouteId(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Origin City</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Mumbai"
+                    value={newOrigin}
+                    onChange={(e) => setNewOrigin(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Destination City</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Delhi"
+                    value={newDestination}
+                    onChange={(e) => setNewDestination(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Estimated Travel Duration</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 7 Hrs 15 Mins"
+                  value={newDuration}
+                  onChange={(e) => setNewDuration(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNewRouteModal(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-xs"
+                >
+                  Save Route
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

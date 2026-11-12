@@ -1,161 +1,258 @@
-import { useEffect, useRef, useState } from 'react'
-import { Map as MapLibreMap, NavigationControl } from 'maplibre-gl'
+import { useState, useEffect } from 'react'
 import type { Overview } from '../../types'
-import 'maplibre-gl/dist/maplibre-gl.css'
 
 type Props = {
   overview: Overview | null
 }
 
-export default function DeliveryTrackingView({ overview }: Props) {
-  const mapContainer = useRef<HTMLDivElement>(null)
-  const mapInstance = useRef<InstanceType<typeof MapLibreMap> | null>(null)
+type VehicleCard = {
+  id: string
+  reg: string
+  cap: string
+  status: 'Active' | 'Arriving' | 'Departed'
+  departure: string
+  arrival: string
+  stops: string[]
+  driverName: string
+  driverId: string
+  driverPhone: string
+  driverAvatar: string
+  routeCode: string
+  distanceLeftKm: number
+  currentHighway: string
+  lastStop: string
+  speedKmps: number
+  hoursLeft: string
+}
 
-  const [activeFilter, setActiveFilter] = useState<'Active' | 'Arriving' | 'Departed'>('Active')
-  const [selectedShipment, setSelectedShipment] = useState('SHIPID0123')
-  const [showTooltip, setShowTooltip] = useState(true)
-  const [currentSpeed, setCurrentSpeed] = useState(120)
+const VEHICLE_DATA: VehicleCard[] = [
+  {
+    id: 'SHIPID0123',
+    reg: 'DL04MP7045',
+    cap: 'Max Ld. 6.5 Ton',
+    status: 'Arriving',
+    departure: 'Delhi (17 July 2024, 10:00)',
+    arrival: 'Mumbai (21 July 2024, 10:00)',
+    stops: ['Chandigarh (17 July 2024, 12:00)', 'Lonavala (17 July 2024, 12:00)'],
+    driverName: 'Rajesh Kumar',
+    driverId: '#Driv012345',
+    driverPhone: '+91 98765 43210',
+    driverAvatar: '/assets/harsh_avatar.png',
+    routeCode: 'Route A002',
+    distanceLeftKm: 240,
+    currentHighway: 'NH04 - Jaipur Highway',
+    lastStop: '2 Hours Ago',
+    speedKmps: 120,
+    hoursLeft: '12 Hrs Left',
+  },
+  {
+    id: 'SHIPID0124',
+    reg: 'DL04MP7045',
+    cap: 'Max Ld. 6.5 Ton',
+    status: 'Active',
+    departure: 'Gurugram Hub (17 July 2024, 08:30)',
+    arrival: 'Jaipur SEZ (18 July 2024, 04:00)',
+    stops: ['Rewari Bypass', 'Behror Cargo Terminal'],
+    driverName: 'Vikram Singh',
+    driverId: '#Driv012346',
+    driverPhone: '+91 98111 22334',
+    driverAvatar: '/assets/harsh_avatar.png',
+    routeCode: 'Route A001',
+    distanceLeftKm: 185,
+    currentHighway: 'NH48 - Delhi-Jaipur Expressway',
+    lastStop: '45 Mins Ago',
+    speedKmps: 114,
+    hoursLeft: '4.5 Hrs Left',
+  },
+  {
+    id: 'SHIPID0125',
+    reg: 'HR26BR8819',
+    cap: 'Max Ld. 8.5 Ton',
+    status: 'Arriving',
+    departure: 'Ludhiana GT Road (17 July 2024, 06:00)',
+    arrival: 'Noida Sector 153 (17 July 2024, 22:00)',
+    stops: ['Ambala Junction', 'Panipat Toll'],
+    driverName: 'Harpreet Singh',
+    driverId: '#Driv012347',
+    driverPhone: '+91 98222 33445',
+    driverAvatar: '/assets/harsh_avatar.png',
+    routeCode: 'Route B003',
+    distanceLeftKm: 95,
+    currentHighway: 'Eastern Peripheral Expressway',
+    lastStop: '1 Hour Ago',
+    speedKmps: 118,
+    hoursLeft: '2 Hrs Left',
+  },
+  {
+    id: 'SHIPID0126',
+    reg: 'MH02CV4421',
+    cap: 'Max Ld. 5.0 Ton',
+    status: 'Departed',
+    departure: 'JNPT Navi Mumbai (16 July 2024, 22:00)',
+    arrival: 'Ahmedabad Ring Road (18 July 2024, 18:00)',
+    stops: ['Surat Industrial Yard', 'Vadodara Terminal'],
+    driverName: 'Amit Desai',
+    driverId: '#Driv012348',
+    driverPhone: '+91 98333 44556',
+    driverAvatar: '/assets/harsh_avatar.png',
+    routeCode: 'Route C004',
+    distanceLeftKm: 410,
+    currentHighway: 'NH48 - Mumbai-Ahmedabad Corridor',
+    lastStop: '3 Hours Ago',
+    speedKmps: 105,
+    hoursLeft: '18 Hrs Left',
+  },
+  {
+    id: 'SHIPID0127',
+    reg: 'DL01EA1144',
+    cap: 'Max Ld. 4.0 Ton',
+    status: 'Active',
+    departure: 'Delhi Cargo Depot (17 July 2024, 11:00)',
+    arrival: 'Agra Express Gateway (17 July 2024, 17:00)',
+    stops: ['Mathura Freight Link'],
+    driverName: 'Suresh Verma',
+    driverId: '#Driv012349',
+    driverPhone: '+91 98444 55667',
+    driverAvatar: '/assets/harsh_avatar.png',
+    routeCode: 'Route A005',
+    distanceLeftKm: 120,
+    currentHighway: 'Yamuna Expressway',
+    lastStop: '30 Mins Ago',
+    speedKmps: 122,
+    hoursLeft: '1.8 Hrs Left',
+  },
+]
 
-  // Real-time speed variance simulation
+export default function DeliveryTrackingView({ overview: _overview }: Props) {
+  const [vehicles] = useState<VehicleCard[]>(VEHICLE_DATA)
+  const [activeFilter, setActiveFilter] = useState<'All' | 'Active' | 'Arriving' | 'Departed'>('All')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedId, setSelectedId] = useState<string>('SHIPID0123')
+  const [expandedCardId, setExpandedCardId] = useState<string>('SHIPID0123')
+
+  // Live telemetry dynamic states
+  const [speedJitter, setSpeedJitter] = useState(120)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [notification, setNotification] = useState<string | null>(null)
+
+  // Modals
+  const [showCallModal, setShowCallModal] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
+  const [callDuration, setCallDuration] = useState(14)
+  const [showVehicleDetailsModal, setShowVehicleDetailsModal] = useState(false)
+  const [showDocModal, setShowDocModal] = useState(false)
+
+  const activeVehicle = vehicles.find((v) => v.id === selectedId) || vehicles[0]
+
+  // Periodic speed update
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSpeed(118 + Math.floor(Math.random() * 6))
-    }, 2500)
+      setSpeedJitter(118 + Math.floor(Math.random() * 5))
+    }, 2800)
     return () => clearInterval(timer)
   }, [])
 
-  // Initialize Delhi-Jaipur Route Map
+  // Call duration counter
   useEffect(() => {
-    if (!mapContainer.current || mapInstance.current) return
+    if (!showCallModal) return
+    const timer = setInterval(() => {
+      setCallDuration((d) => d + 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [showCallModal])
 
-    const map = new MapLibreMap({
-      container: mapContainer.current,
-      center: [76.5, 27.6], // Centered between Delhi and Jaipur
-      zoom: 7.2,
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
-          },
-        },
-        layers: [{ id: 'osm-layer', type: 'raster', source: 'osm' }],
-      },
-      attributionControl: { compact: true },
-    })
+  function showToast(msg: string) {
+    setNotification(msg)
+    setTimeout(() => setNotification(null), 3800)
+  }
 
-    mapInstance.current = map
-    map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
+  function handleRefresh() {
+    setIsRefreshing(true)
+    setTimeout(() => {
+      setIsRefreshing(false)
+      setSpeedJitter(119 + Math.floor(Math.random() * 4))
+      showToast('📡 Telemetry refreshed via NavIC satellite constellation')
+    }, 700)
+  }
 
-    map.on('load', () => {
-      // Highway corridor route polyline from Delhi to Gurugram to Jaipur
-      const routeGeoJson: GeoJSON.FeatureCollection = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: [
-                [77.209, 28.6139], // Delhi
-                [77.0266, 28.4595], // Gurugram
-                [76.8122, 28.2163], // Rewari
-                [76.6214, 27.9734], // Behror
-                [76.3533, 27.5621], // Kotputli
-                [75.9814, 27.1856], // Shahpura
-                [75.7873, 26.9124], // Jaipur
-              ],
-            },
-          },
-        ],
-      }
+  function handleDownloadDocumentation() {
+    const manifestText = `===============================================================
+AUTONOMOUS X LOGISTICS - ELECTRONIC BILL OF LADING & MANIFEST
+===============================================================
+Shipment ID     : ${activeVehicle.id}
+Vehicle Reg     : ${activeVehicle.reg}
+Truck Model     : Eicher Pro 2059 Heavy Cargo Carrier
+Chassis No      : CH4CH01234
+Max Weight Cap  : ${activeVehicle.cap}
+Carrier Org     : Autonomous X Network Fleet Pvt Ltd
 
-      // Add Route Line
-      map.addSource('highway-route', {
-        type: 'geojson',
-        data: routeGeoJson,
-      })
+DRIVER & TELEMETRY DISPATCH:
+---------------------------------------------------------------
+Assigned Driver : ${activeVehicle.driverName} (${activeVehicle.driverId})
+Driver Phone    : ${activeVehicle.driverPhone}
+Corridor Route  : ${activeVehicle.routeCode} (${activeVehicle.currentHighway})
+GPS Telemetry   : 26.9124° N, 75.7873° E (Live Corridor Lock)
+Current Speed   : ${speedJitter} km/h (Governed Safe Cruise)
+Distance Remaining: ${activeVehicle.distanceLeftKm} KM
+Estimated Delay : 0.0 Hrs (Optimal Green Transit Corridor)
 
-      map.addLayer({
-        id: 'route-line-bg',
-        type: 'line',
-        source: 'highway-route',
-        paint: {
-          'line-color': '#1d4ed8',
-          'line-width': 6,
-          'line-opacity': 0.85,
-        },
-      })
+ROUTE ITINERARY & STOPS:
+---------------------------------------------------------------
+1. Origin Departure : ${activeVehicle.departure}
+2. Intermediate Stops:
+   ${activeVehicle.stops.map((s, i) => `[Stop ${i + 1}] ${s}`).join('\n   ')}
+3. Final Destination : ${activeVehicle.arrival}
 
-      map.addLayer({
-        id: 'route-line-core',
-        type: 'line',
-        source: 'highway-route',
-        paint: {
-          'line-color': '#3b82f6',
-          'line-width': 3,
-        },
-      })
+REGULATORY COMPLIANCE & AXLE SENSOR VERIFICATION:
+---------------------------------------------------------------
+Cedar SMT Proof : VERIFIED VALID (Security Policy Strict Pass)
+Payload Weight  : 3,900 KG / 6,500 KG (60% Optimal Balance)
+Axle Balance    : Front 1,850 KG | Rear Tandem 2,050 KG (Pass)
+Tamper Seal #   : AX-SEAL-8890214-GEO (Intact, Zero Breach)
+Generated At    : ${new Date().toISOString()}
+===============================================================`
 
-      // Add Waypoint Pins
-      const pinsGeoJson: GeoJSON.FeatureCollection = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            properties: { label: 'Delhi', kind: 'start' },
-            geometry: { type: 'Point', coordinates: [77.209, 28.6139] },
-          },
-          {
-            type: 'Feature',
-            properties: { label: 'Gurugram', kind: 'current' },
-            geometry: { type: 'Point', coordinates: [77.0266, 28.4595] },
-          },
-          {
-            type: 'Feature',
-            properties: { label: 'Jaipur', kind: 'end' },
-            geometry: { type: 'Point', coordinates: [75.7873, 26.9124] },
-          },
-        ],
-      }
+    const blob = new Blob([manifestText], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `AUTONOMOUS_X_Manifest_${activeVehicle.id}.txt`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
 
-      map.addSource('route-pins', {
-        type: 'geojson',
-        data: pinsGeoJson,
-      })
+    showToast(`📄 Downloaded shipping manifest for #${activeVehicle.id}`)
+  }
 
-      map.addLayer({
-        id: 'pin-circles',
-        type: 'circle',
-        source: 'route-pins',
-        paint: {
-          'circle-radius': 9,
-          'circle-color': ['match', ['get', 'kind'], 'current', '#2563eb', 'start', '#10b981', '#ef4444'],
-          'circle-stroke-width': 3,
-          'circle-stroke-color': '#ffffff',
-        },
-      })
-    })
-
-    return () => {
-      map.remove()
-      mapInstance.current = null
-    }
-  }, [])
+  const filteredVehicles = vehicles.filter((v) => {
+    const matchesFilter = activeFilter === 'All' || v.status === activeFilter
+    const matchesSearch =
+      v.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      v.reg.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      v.driverName.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesFilter && matchesSearch
+  })
 
   return (
     <div className="p-6 bg-[#f8fafc] min-h-[calc(100vh-64px)] text-slate-800">
+      {/* Toast Notification */}
+      {notification && (
+        <div className="fixed top-20 right-8 z-50 bg-slate-900 text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-top-2">
+          <span>{notification}</span>
+          <button onClick={() => setNotification(null)} className="text-slate-400 hover:text-white ml-2">✕</button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* ========================================================= */}
         {/* LEFT COLUMN (3 cols): Vehicles Search & Fleet List */}
+        {/* ========================================================= */}
         <div className="lg:col-span-3 bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-800">Vehicles</h3>
             <span className="text-[10px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md font-semibold">
-              {overview?.vehicles.length ?? 10} Online
+              {vehicles.length} Online
             </span>
           </div>
 
@@ -164,20 +261,31 @@ export default function DeliveryTrackingView({ overview }: Props) {
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none z-10">🔍</span>
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by Shipment ID, No."
               style={{ paddingLeft: '34px', backgroundColor: '#f8fafc', color: '#1e293b' }}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-none"
+              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-none transition-all"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 text-xs text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex gap-2">
-            {(['Active', 'Arriving', 'Departed'] as const).map((tab) => (
+          <div className="flex gap-1.5">
+            {(['All', 'Active', 'Arriving', 'Departed'] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveFilter(tab)}
-                className={`flex-1 py-1 text-xs font-semibold rounded-lg transition-colors ${
+                className={`flex-1 py-1 text-[11px] font-semibold rounded-lg transition-colors ${
                   activeFilter === tab
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
@@ -188,145 +296,285 @@ export default function DeliveryTrackingView({ overview }: Props) {
             ))}
           </div>
 
-          {/* Vehicles List */}
+          {/* Vehicles List matching Image 7 */}
           <div className="space-y-3 max-h-[720px] overflow-y-auto pr-1">
-            {/* Active Card with Tooltip Popover */}
-            <div className="relative border-2 border-blue-500 rounded-xl p-3 bg-blue-50/20 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm">
-                    🚚
-                  </div>
-                  <span className="text-xs font-bold text-slate-800">#ShipID0123</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="bg-amber-50 border border-amber-200 text-amber-600 px-2 py-0.5 rounded text-[10px] font-semibold">
-                    Arriving
-                  </span>
-                  <button
-                    type="button"
-                    className="bg-blue-600 text-white text-[10px] font-semibold px-2.5 py-1 rounded-md shadow-sm"
-                  >
-                    Tracking
-                  </button>
-                </div>
-              </div>
+            {filteredVehicles.map((v) => {
+              const isSelected = v.id === selectedId
+              const isExpanded = v.id === expandedCardId
 
-              {/* Driver pill */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 mt-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <img
-                    src="/assets/harsh_avatar.png"
-                    alt="Driver"
-                    className="w-6 h-6 rounded-full object-cover"
-                    onError={(e) => { e.currentTarget.style.display = 'none' }}
-                  />
-                  <div>
-                    <div className="text-[9px] text-slate-400">Shipper's ID</div>
-                    <div className="text-xs font-bold text-slate-800">#Driv012345</div>
-                  </div>
-                </div>
-                <button type="button" className="text-slate-400 hover:text-blue-600" title="Call Driver">
-                  📞
-                </button>
-              </div>
+              return (
+                <div
+                  key={v.id}
+                  onClick={() => setSelectedId(v.id)}
+                  className={`rounded-xl transition-all cursor-pointer ${
+                    isSelected
+                      ? 'border-2 border-blue-500 bg-blue-50/20 p-3 shadow-sm'
+                      : 'border border-slate-200 bg-white hover:border-slate-300 p-3'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm ${
+                        isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        🚚
+                      </div>
+                      <span className="text-xs font-bold text-slate-800">#{v.id}</span>
+                    </div>
 
-              {/* Delivery Tracking Tooltip (from Screenshot) */}
-              {showTooltip && (
-                <div className="absolute left-full ml-3 top-2 w-64 bg-blue-600 text-white p-3.5 rounded-2xl shadow-xl z-30 animate-fadeIn">
-                  <div className="flex justify-between items-start mb-1">
-                    <h4 className="text-xs font-bold">Delivery Tracking</h4>
-                    <button
-                      type="button"
-                      onClick={() => setShowTooltip(false)}
-                      className="text-white/80 hover:text-white text-xs"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-blue-100 leading-snug mb-3">
-                    Allow users to track the status of each truck and its orders in real-time.
-                  </p>
-                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-blue-500/60">
-                    <span className="text-blue-200">1 / 5</span>
-                    <div className="flex gap-2">
-                      <button type="button" className="text-blue-200 hover:text-white">Previous</button>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                        v.status === 'Arriving'
+                          ? 'bg-amber-50 border border-amber-200 text-amber-600'
+                          : v.status === 'Active'
+                          ? 'bg-emerald-50 border border-emerald-200 text-emerald-600'
+                          : 'bg-slate-100 border border-slate-200 text-slate-600'
+                      }`}>
+                        {v.status}
+                      </span>
                       <button
                         type="button"
-                        onClick={() => setShowTooltip(false)}
-                        className="bg-white text-blue-600 px-2 py-0.5 rounded font-semibold shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedId(v.id)
+                          showToast(`🎯 Tracking live coordinates for #${v.id}`)
+                        }}
+                        className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${
+                          isSelected
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'border border-blue-600 text-blue-600 hover:bg-blue-50'
+                        }`}
                       >
-                        Next
+                        {isSelected ? 'Tracking' : 'Q Track'}
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
 
-            {/* Other Vehicle Cards */}
-            {[
-              { id: '#ShipID00123', reg: 'DL04MP7045', cap: 'Max Ld. 6.5 Ton', status: 'Arriving' },
-              { id: '#ShipID00123', reg: 'DL04MP7045', cap: 'Max Ld. 6.5 Ton', status: 'Arriving' },
-              { id: '#ShipID00123', reg: 'DL04MP7045', cap: 'Max Ld. 6.5 Ton', status: 'Arriving' },
-              { id: '#ShipID00123', reg: 'DL04MP7045', cap: 'Max Ld. 6.5 Ton', status: 'Arriving' },
-              { id: '#ShipID00123', reg: 'DL04MP7045', cap: 'Max Ld. 6.5 Ton', status: 'Arriving' },
-            ].map((v, idx) => (
-              <div
-                key={idx}
-                onClick={() => setSelectedShipment(v.id)}
-                className="p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">🚚</span>
-                    <span className="text-xs font-bold text-slate-800">{v.id}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded text-[9px] font-semibold">
-                      {v.status}
-                    </span>
+                  {/* Secondary info bar */}
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2">
+                    <span>{v.reg}</span>
+                    <span>{v.cap}</span>
                     <button
                       type="button"
-                      className="border border-blue-600 text-blue-600 text-[10px] font-semibold px-2 py-0.5 rounded hover:bg-blue-50"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setExpandedCardId(isExpanded ? '' : v.id)
+                      }}
+                      className="text-blue-600 font-semibold hover:underline"
                     >
-                      Track
+                      {isExpanded ? 'View Less' : 'View More'}
                     </button>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-between text-[10px] text-slate-400">
-                  <span>{v.reg}</span>
-                  <span>{v.cap}</span>
-                  <span className="text-blue-600 font-medium">View More</span>
+                  {/* Expanded stops & minimap details matching Image 7 */}
+                  {isExpanded && (
+                    <div className="pt-2 border-t border-slate-200/80 space-y-2 text-[10px] animate-in fade-in">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="space-y-1 text-slate-600 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="font-semibold text-slate-700">Departure:</span> {v.departure}
+                          </div>
+                          {v.stops.map((st, sIdx) => (
+                            <div key={sIdx} className="flex items-center gap-1.5 pl-3 text-slate-500">
+                              <span className="w-1 h-1 rounded-full bg-slate-300" />
+                              <span>Stop 0{sIdx + 1}: {st}</span>
+                            </div>
+                          ))}
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                            <span className="font-semibold text-slate-700">Arrival:</span> {v.arrival}
+                          </div>
+                        </div>
+
+                        {/* Route code thumbnail */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-center shrink-0 w-20">
+                          <span className="text-[9px] text-slate-400 block">Corridor</span>
+                          <span className="text-[10px] font-bold text-blue-600">{v.routeCode}</span>
+                        </div>
+                      </div>
+
+                      {/* Driver pill with working Call button */}
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 mt-2">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={v.driverAvatar}
+                            alt="Driver"
+                            className="w-6 h-6 rounded-full object-cover border border-slate-200"
+                            onError={(e) => { e.currentTarget.style.display = 'none' }}
+                          />
+                          <div>
+                            <div className="text-[9px] text-slate-400">Shipper's ID</div>
+                            <div className="text-xs font-bold text-slate-800">{v.driverId}</div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowCallModal(true)
+                          }}
+                          className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors"
+                          title="Call Driver via Encrypted VoIP"
+                        >
+                          📞
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
-        {/* CENTER COLUMN (6 cols): Live Road Map & Telemetry Bar */}
+        {/* ========================================================= */}
+        {/* CENTER COLUMN (6 cols): Cartographic GPS Map & Telemetry Bar */}
+        {/* ========================================================= */}
         <div className="lg:col-span-6 space-y-4">
           <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm relative overflow-hidden">
             {/* Header above map */}
             <div className="flex items-center justify-between mb-3">
               <div>
                 <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block">Shipment ID</span>
-                <span className="text-base font-extrabold text-slate-900">#{selectedShipment}</span>
+                <span className="text-base font-extrabold text-slate-900">#{activeVehicle.id}</span>
               </div>
-              <button
-                type="button"
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition-colors"
-              >
-                <span>📥</span> Documentation
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDocModal(true)}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 transition-colors"
+                  title="View digital bill of lading"
+                >
+                  👁️ View E-Way Bill
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadDocumentation}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Download Shipping Manifest and Compliance Docs"
+                >
+                  <span>📥</span> Documentation
+                </button>
+              </div>
             </div>
 
-            {/* Interactive MapLibre Canvas */}
-            <div className="h-[520px] rounded-xl overflow-hidden relative border border-slate-200">
-              <div ref={mapContainer} className="w-full h-full" />
+            {/* Cartographic Road Map (Visual Corridor Jaipur -> Noida/Gurugram) */}
+            <div className="h-[520px] rounded-xl overflow-hidden relative border border-slate-200 bg-[#e5ece2]">
+              <svg className="w-full h-full" viewBox="0 0 800 650" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                  {/* Terrain and park fills */}
+                  <pattern id="terrain-pattern-track" width="60" height="60" patternUnits="userSpaceOnUse">
+                    <circle cx="20" cy="20" r="1.5" fill="#cad5c2" />
+                    <circle cx="50" cy="45" r="1.5" fill="#cad5c2" />
+                  </pattern>
+                  <filter id="shadow-track">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.2" />
+                  </filter>
+                </defs>
 
-              {/* Bottom Telemetry Floating Overlay Bar (Matching Image 3) */}
+                {/* Base Land Fill */}
+                <rect width="800" height="650" fill="#f4f1ea" />
+
+                {/* Greenery / Forest / Hilly terrain blocks */}
+                <path d="M 500,50 Q 620,120 720,80 L 800,160 L 800,0 L 500,0 Z" fill="#dce6d5" opacity="0.8" />
+                <path d="M 380,320 Q 440,360 480,440 Q 520,520 460,600 L 320,650 L 300,480 Z" fill="#d8e3d1" opacity="0.7" />
+                <path d="M 50,180 Q 140,240 180,350 Q 120,440 60,400 L 0,380 L 0,200 Z" fill="#e2ecd9" opacity="0.6" />
+
+                {/* Secondary arterial roads (yellow/orange highway network) */}
+                <path d="M 0,140 L 800,180" stroke="#fef08a" strokeWidth="6" fill="none" opacity="0.9" />
+                <path d="M 120,0 L 380,650" stroke="#fed7aa" strokeWidth="5" fill="none" opacity="0.8" />
+                <path d="M 300,650 L 750,100" stroke="#fed7aa" strokeWidth="5" fill="none" opacity="0.8" />
+                <path d="M 680,0 L 550,650" stroke="#fef08a" strokeWidth="5" fill="none" opacity="0.7" />
+                <path d="M 50,550 L 780,480" stroke="#fef08a" strokeWidth="4" fill="none" opacity="0.8" />
+
+                {/* Highway Corridor Line (Blue) matching Image 7 */}
+                {/* Path starting at Jaipur (bottom-left) winding up through Alwar, Bhiwadi, Gurugram to Noida (top-right) */}
+                <path
+                  d="M 270,520 L 340,490 L 410,430 L 460,370 L 470,300 L 500,240 L 550,180 L 610,140 L 680,105"
+                  stroke="#1d4ed8"
+                  strokeWidth="7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+                <path
+                  d="M 270,520 L 340,490 L 410,430 L 460,370 L 470,300 L 500,240 L 550,180 L 610,140 L 680,105"
+                  stroke="#60a5fa"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+
+                {/* City Labels & Area Markings matching Image 7 */}
+                {/* New Delhi */}
+                <g transform="translate(640, 70)">
+                  <text x="0" y="0" fontSize="14" fontWeight="bold" fill="#334155" textAnchor="middle">New Delhi</text>
+                  <text x="0" y="14" fontSize="12" fontWeight="bold" fill="#475569" textAnchor="middle">नई दिल्ली</text>
+                </g>
+
+                {/* Noida (Destination pin) */}
+                <g transform="translate(680, 105)">
+                  <circle cx="0" cy="0" r="10" fill="#2563eb" filter="url(#shadow-track)" />
+                  <circle cx="0" cy="0" r="4.5" fill="#ffffff" />
+                  <text x="14" y="5" fontSize="15" fontWeight="900" fill="#1e293b">Noida</text>
+                  <text x="14" y="20" fontSize="13" fontWeight="bold" fill="#475569">नोएडा</text>
+                </g>
+
+                {/* Gurugram */}
+                <g transform="translate(600, 175)">
+                  <text x="0" y="0" fontSize="14" fontWeight="800" fill="#334155" textAnchor="middle">Gurugram</text>
+                  <text x="0" y="14" fontSize="12" fontWeight="bold" fill="#475569" textAnchor="middle">गुरुग्राम</text>
+                </g>
+
+                {/* Rewari */}
+                <g transform="translate(530, 240)">
+                  <text x="0" y="0" fontSize="11" fontWeight="bold" fill="#64748b" textAnchor="middle">Rewari</text>
+                  <text x="0" y="12" fontSize="10" fill="#64748b" textAnchor="middle">रेवाड़ी</text>
+                </g>
+
+                {/* Alwar */}
+                <g transform="translate(560, 340)">
+                  <text x="0" y="0" fontSize="14" fontWeight="bold" fill="#1e293b" textAnchor="middle">Alwar</text>
+                  <text x="0" y="14" fontSize="12" fontWeight="bold" fill="#475569" textAnchor="middle">अलवर</text>
+                </g>
+
+                {/* Kotputli */}
+                <g transform="translate(420, 290)">
+                  <text x="0" y="0" fontSize="11" fontWeight="bold" fill="#64748b" textAnchor="middle">Kotputli</text>
+                  <text x="0" y="12" fontSize="10" fill="#64748b" textAnchor="middle">कोटपूतली</text>
+                </g>
+
+                {/* Bandikui */}
+                <g transform="translate(470, 420)">
+                  <text x="0" y="0" fontSize="11" fontWeight="bold" fill="#64748b" textAnchor="middle">Bandikui</text>
+                </g>
+
+                {/* Jaipur (Origin pin) */}
+                <g transform="translate(340, 480)">
+                  <text x="0" y="0" fontSize="18" fontWeight="900" fill="#0f172a" textAnchor="middle">Jaipur</text>
+                  <text x="0" y="18" fontSize="15" fontWeight="bold" fill="#334155" textAnchor="middle">जयपुर</text>
+                </g>
+
+                {/* Kishangarh (Current active vehicle position) */}
+                <g transform="translate(270, 520)">
+                  {/* Pulse ring */}
+                  <circle cx="0" cy="0" r="22" fill="#3b82f6" opacity="0.25" className="animate-ping" />
+                  <circle cx="0" cy="0" r="14" fill="#2563eb" filter="url(#shadow-track)" />
+                  <path d="M -6,-6 L 6,-6 L 0,7 Z" fill="#ffffff" />
+                  <text x="-8" y="28" fontSize="11" fontWeight="bold" fill="#1e293b" textAnchor="middle">Kishangarh</text>
+                  <text x="-8" y="40" fontSize="10" fill="#475569" textAnchor="middle">किशनगढ़</text>
+                </g>
+
+                {/* Animated truck icon travelling on route */}
+                <g transform="translate(470, 300)">
+                  <circle cx="0" cy="0" r="12" fill="#1d4ed8" filter="url(#shadow-track)" />
+                  <text x="0" y="4" fontSize="11" fill="#ffffff" textAnchor="middle">🚚</text>
+                </g>
+              </svg>
+
+              {/* Bottom Telemetry Floating Overlay Bar (Exact match to Image 7) */}
               <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md rounded-2xl p-3 border border-slate-200 shadow-lg grid grid-cols-3 gap-y-2 gap-x-4 text-xs">
                 {/* Metric 1: Location */}
                 <div className="flex items-center gap-2">
@@ -334,7 +582,7 @@ export default function DeliveryTrackingView({ overview }: Props) {
                     🧭
                   </span>
                   <div>
-                    <div className="font-bold text-slate-800 text-[11px] leading-tight">NH04 - Jaipur Highway</div>
+                    <div className="font-bold text-slate-800 text-[11px] leading-tight">{activeVehicle.currentHighway}</div>
                     <div className="text-[9px] text-slate-400">Current Location</div>
                   </div>
                 </div>
@@ -345,7 +593,7 @@ export default function DeliveryTrackingView({ overview }: Props) {
                     📍
                   </span>
                   <div>
-                    <div className="font-bold text-slate-800 text-[11px] leading-tight">240 KM</div>
+                    <div className="font-bold text-slate-800 text-[11px] leading-tight">{activeVehicle.distanceLeftKm} KM</div>
                     <div className="text-[9px] text-slate-400">Kilometers Left</div>
                   </div>
                 </div>
@@ -356,7 +604,7 @@ export default function DeliveryTrackingView({ overview }: Props) {
                     🕒
                   </span>
                   <div>
-                    <div className="font-bold text-slate-800 text-[11px] leading-tight">2 Hours Ago</div>
+                    <div className="font-bold text-slate-800 text-[11px] leading-tight">{activeVehicle.lastStop}</div>
                     <div className="text-[9px] text-slate-400">Last Stop</div>
                   </div>
                 </div>
@@ -367,7 +615,7 @@ export default function DeliveryTrackingView({ overview }: Props) {
                     ⏱️
                   </span>
                   <div>
-                    <div className="font-bold text-slate-800 text-[11px] leading-tight">{currentSpeed} Kmps</div>
+                    <div className="font-bold text-slate-800 text-[11px] leading-tight">{speedJitter} Kmps</div>
                     <div className="text-[9px] text-slate-400">Current Speed</div>
                   </div>
                 </div>
@@ -378,7 +626,7 @@ export default function DeliveryTrackingView({ overview }: Props) {
                     ⚡
                   </span>
                   <div>
-                    <div className="font-bold text-slate-800 text-[11px] leading-tight">{currentSpeed} Kmps</div>
+                    <div className="font-bold text-slate-800 text-[11px] leading-tight">{speedJitter} Kmps</div>
                     <div className="text-[9px] text-slate-400">Current Speed</div>
                   </div>
                 </div>
@@ -389,7 +637,7 @@ export default function DeliveryTrackingView({ overview }: Props) {
                     🛞
                   </span>
                   <div>
-                    <div className="font-bold text-slate-800 text-[11px] leading-tight">{currentSpeed} Kmps</div>
+                    <div className="font-bold text-slate-800 text-[11px] leading-tight">{speedJitter} Kmps</div>
                     <div className="text-[9px] text-slate-400">Current Speed</div>
                   </div>
                 </div>
@@ -398,7 +646,9 @@ export default function DeliveryTrackingView({ overview }: Props) {
           </div>
         </div>
 
+        {/* ========================================================= */}
         {/* RIGHT COLUMN (3 cols): Status Milestones & Vehicle Details */}
+        {/* ========================================================= */}
         <div className="lg:col-span-3 space-y-5">
           {/* Status Timeline Card */}
           <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-4">
@@ -406,9 +656,10 @@ export default function DeliveryTrackingView({ overview }: Props) {
               <h3 className="text-sm font-bold text-slate-800">Status</h3>
               <button
                 type="button"
-                className="text-xs font-semibold text-slate-500 hover:text-blue-600 border border-slate-200 px-2 py-0.5 rounded-md"
+                onClick={handleRefresh}
+                className="text-xs font-semibold text-slate-500 hover:text-blue-600 border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer"
               >
-                Refresh
+                <span className={isRefreshing ? 'animate-spin inline-block' : ''}>🔄</span> Refresh
               </button>
             </div>
 
@@ -424,11 +675,11 @@ export default function DeliveryTrackingView({ overview }: Props) {
                 <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
                   <div className="bg-gradient-to-r from-blue-500 to-indigo-600 h-full w-[65%]" />
                 </div>
-                <span className="text-[10px] font-bold text-slate-700 whitespace-nowrap">12 Hrs Left</span>
+                <span className="text-[10px] font-bold text-slate-700 whitespace-nowrap">{activeVehicle.hoursLeft}</span>
               </div>
             </div>
 
-            {/* Stepper Timeline */}
+            {/* Stepper Timeline matching Image 7 */}
             <div className="space-y-3 pt-2 text-xs">
               {/* Step 1: Departure */}
               <div className="flex items-start gap-3">
@@ -480,13 +731,14 @@ export default function DeliveryTrackingView({ overview }: Props) {
             </div>
           </div>
 
-          {/* Vehicle Details Card (Matching Image 3) */}
+          {/* Vehicle Details Card (Matching Image 7) with working Open button */}
           <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-800">Vehicle Details</h3>
               <button
                 type="button"
-                className="text-xs font-semibold text-slate-500 hover:text-blue-600 border border-slate-200 px-2 py-0.5 rounded-md"
+                onClick={() => setShowVehicleDetailsModal(true)}
+                className="text-xs font-semibold text-slate-500 hover:text-blue-600 border border-slate-200 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
               >
                 Open
               </button>
@@ -502,13 +754,13 @@ export default function DeliveryTrackingView({ overview }: Props) {
               />
               <div className="text-xs space-y-1">
                 <div className="font-bold text-slate-900 text-sm">Eicher Pro 2059</div>
-                <div className="text-[10px] text-slate-400">DL04MP7045</div>
-                <div className="text-[10px] text-slate-500">Shipment ID: SHIPID01234</div>
+                <div className="text-[10px] text-slate-400">{activeVehicle.reg}</div>
+                <div className="text-[10px] text-slate-500">Shipment ID: #{activeVehicle.id}</div>
                 <div className="text-[10px] text-slate-400">Chassis No: CH4CH01234</div>
               </div>
             </div>
 
-            {/* 4-grid Specs */}
+            {/* 4-grid Specs matching Image 7 */}
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
               <div className="bg-slate-50 p-2 rounded-lg">
                 <div className="text-[9px] text-slate-400">Payload</div>
@@ -530,7 +782,252 @@ export default function DeliveryTrackingView({ overview }: Props) {
           </div>
         </div>
       </div>
+
+      {/* ========================================================= */}
+      {/* MODAL: Active Driver VoIP Dispatch Call */}
+      {/* ========================================================= */}
+      {showCallModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center space-y-5 animate-in zoom-in-95">
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowCallModal(false)}
+                className="text-slate-400 hover:text-slate-700 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="relative mx-auto w-20 h-20">
+              <span className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping" />
+              <img
+                src={activeVehicle.driverAvatar}
+                alt="Driver"
+                className="relative w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg mx-auto"
+              />
+            </div>
+
+            <div>
+              <h3 className="text-base font-bold text-slate-900">{activeVehicle.driverName}</h3>
+              <p className="text-xs text-slate-500">{activeVehicle.driverId} • {activeVehicle.driverPhone}</p>
+              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Call Active ({Math.floor(callDuration / 60)}:{String(callDuration % 60).padStart(2, '0')})</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              Corridor audio connection secured with AES-256 GCM encryption via NavIC telematics gateway.
+            </p>
+
+            <div className="flex items-center justify-center gap-4 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsMuted(!isMuted)}
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-lg transition-colors ${
+                  isMuted ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+                title={isMuted ? 'Unmute Mic' : 'Mute Mic'}
+              >
+                {isMuted ? '🔇' : '🎙️'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCallModal(false)
+                  showToast('Call ended with driver')
+                }}
+                className="w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-xl shadow-lg shadow-red-500/30 transition-colors"
+                title="End Dispatch Call"
+              >
+                📞
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: Full Vehicle Diagnostics & CAN-Bus Telematics */}
+      {/* ========================================================= */}
+      {showVehicleDetailsModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Vehicle Diagnostics & Telematics</h3>
+                <p className="text-xs text-slate-400">Eicher Pro 2059 • {activeVehicle.reg} • #{activeVehicle.id}</p>
+              </div>
+              <button
+                onClick={() => setShowVehicleDetailsModal(false)}
+                className="text-slate-400 hover:text-slate-700 text-base font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Health Overview */}
+            <div className="grid grid-cols-3 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                <span className="text-[10px] text-emerald-600 font-semibold uppercase">ECU Status</span>
+                <div className="text-sm font-bold text-emerald-900 mt-0.5">Healthy (0 DTC)</div>
+                <div className="text-[10px] text-emerald-700 mt-1">OBD-II Pass</div>
+              </div>
+              <div className="p-3 rounded-xl bg-blue-50 border border-blue-200">
+                <span className="text-[10px] text-blue-600 font-semibold uppercase">Diesel Tank</span>
+                <div className="text-sm font-bold text-blue-900 mt-0.5">74% (140 Ltr)</div>
+                <div className="text-[10px] text-blue-700 mt-1">AdBlue: 88% OK</div>
+              </div>
+              <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-200">
+                <span className="text-[10px] text-indigo-600 font-semibold uppercase">ADAS Level 2+</span>
+                <div className="text-sm font-bold text-indigo-900 mt-0.5">Engaged</div>
+                <div className="text-[10px] text-indigo-700 mt-1">LiDAR / Radar Lock</div>
+              </div>
+            </div>
+
+            {/* Tire Pressure System (TPMS) */}
+            <div>
+              <h4 className="text-xs font-bold text-slate-800 mb-2">Tire Pressure Monitoring (TPMS)</h4>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="bg-slate-50 border border-slate-200 p-2 rounded-lg text-center">
+                  <div className="text-[10px] text-slate-400">Front Steer Left</div>
+                  <div className="font-bold text-slate-800">110 PSI</div>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 p-2 rounded-lg text-center">
+                  <div className="text-[10px] text-slate-400">Front Steer Right</div>
+                  <div className="font-bold text-slate-800">110 PSI</div>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 p-2 rounded-lg text-center">
+                  <div className="text-[10px] text-slate-400">Brake Lining</div>
+                  <div className="font-bold text-emerald-600">82% Good</div>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 p-2 rounded-lg text-center">
+                  <div className="text-[10px] text-slate-400">Rear Dual Left</div>
+                  <div className="font-bold text-slate-800">115 PSI</div>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 p-2 rounded-lg text-center">
+                  <div className="text-[10px] text-slate-400">Rear Dual Right</div>
+                  <div className="font-bold text-slate-800">115 PSI</div>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 p-2 rounded-lg text-center">
+                  <div className="text-[10px] text-slate-400">Engine Oil Temp</div>
+                  <div className="font-bold text-slate-800">89°C (Normal)</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Environmental & Cargo Sensors */}
+            <div>
+              <h4 className="text-xs font-bold text-slate-800 mb-2">Cargo Hold & Tamper Sensors</h4>
+              <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Hold Temperature:</span>
+                  <span className="font-bold text-slate-800">4.2°C (Refrigerated)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Hold Humidity:</span>
+                  <span className="font-bold text-slate-800">48% RH</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Axle Weight Distribution:</span>
+                  <span className="font-bold text-emerald-600">Front 48% / Rear 52% (Optimal)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Container Door Geofence Seal:</span>
+                  <span className="font-bold text-blue-600">Locked (AX-SEAL-8890214)</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  showToast('Diagnostic log exported to service depot')
+                  setShowVehicleDetailsModal(false)
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors"
+              >
+                Export Diagnostic Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: Digital E-Way Bill & Compliance Documentation */}
+      {/* ========================================================= */}
+      {showDocModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Digital Bill of Lading & E-Way Bill</h3>
+                <p className="text-xs text-slate-400">National Goods & Services Tax Network (GSTN)</p>
+              </div>
+              <button
+                onClick={() => setShowDocModal(false)}
+                className="text-slate-400 hover:text-slate-700 text-base font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 font-mono text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div className="flex justify-between border-b border-slate-200 pb-2">
+                <span className="text-slate-400">E-WAY BILL NO:</span>
+                <span className="font-bold text-slate-800">9812-4410-9921</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Shipment ID:</span>
+                <span className="font-bold text-slate-800">#{activeVehicle.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Vehicle No:</span>
+                <span className="font-bold text-slate-800">{activeVehicle.reg}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Driver / Transporter:</span>
+                <span className="font-bold text-slate-800">{activeVehicle.driverName} ({activeVehicle.driverId})</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">From (Dispatch):</span>
+                <span className="font-bold text-slate-800">{activeVehicle.departure}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">To (Destination):</span>
+                <span className="font-bold text-slate-800">{activeVehicle.arrival}</span>
+              </div>
+              <div className="flex justify-between border-t border-slate-200 pt-2">
+                <span className="text-slate-400">Cedar Policy Verification:</span>
+                <span className="font-bold text-emerald-600">SMT FORMAL PROOF PASSED</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDocModal(false)}
+                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 transition-colors"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleDownloadDocumentation()
+                  setShowDocModal(false)
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors"
+              >
+                📥 Download Document
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-

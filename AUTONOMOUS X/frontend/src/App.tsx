@@ -7,9 +7,12 @@ import AuthModal, { type AuthScreen } from './components/AuthModal'
 import Sidebar, { type TabType } from './components/dashboard/Sidebar'
 import TopNavbar from './components/dashboard/TopNavbar'
 import LogisticsOverview from './components/dashboard/LogisticsOverview'
+import LoadManagementView from './components/dashboard/LoadManagementView'
+import RoutePlanningView from './components/dashboard/RoutePlanningView'
 import DeliveryTrackingView from './components/dashboard/DeliveryTrackingView'
 import CreateOrderModal from './components/dashboard/CreateOrderModal'
 import AIDispatchEngine from './components/dashboard/AIDispatchEngine'
+import GuidedTour from './components/dashboard/GuidedTour'
 
 const Analytics = lazy(() => import('./components/Analytics'))
 const OperationsMap = lazy(() => import('./components/OperationsMap'))
@@ -26,6 +29,7 @@ export default function App({ initialView }: { initialView?: 'landing' | 'dashbo
     return import.meta.env.MODE === 'test' ? 'dashboard' : 'landing'
   })
   const [dashboardTab, setDashboardTab] = useState<TabType>('overview')
+  const [showTour, setShowTour] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login')
   const [createOrderOpen, setCreateOrderOpen] = useState(false)
@@ -245,6 +249,7 @@ export default function App({ initialView }: { initialView?: 'landing' | 'dashbo
           }}
           onOpenCreateOrder={() => setDashboardTab('dispatch')}
           onReturnLanding={() => setView('landing')}
+          onToggleTour={() => setShowTour((prev) => !prev)}
         />
 
         {error && (
@@ -258,20 +263,33 @@ export default function App({ initialView }: { initialView?: 'landing' | 'dashbo
 
         {/* Tab Content Panels */}
         <main className="flex-1">
-          {/* Tab 1: Overview (Image 2) */}
+          {/* Tab 1: Overview (Images 4, 6, 8, 9, 10) */}
           {dashboardTab === 'overview' && (
             <LogisticsOverview
               overview={overview}
               onNavigateTracking={() => setDashboardTab('tracking')}
+              onNavigateRoutes={() => setDashboardTab('routes')}
+              onNavigateLoad={() => setDashboardTab('load')}
+              onOpenCreateOrder={() => setDashboardTab('dispatch')}
             />
           )}
 
-          {/* Tab 2: Delivery Tracking (Image 3) */}
+          {/* Tab 2: Load Management (Image 2) */}
+          {dashboardTab === 'load' && (
+            <LoadManagementView />
+          )}
+
+          {/* Tab 3: Route Planning (Images 3, 5, 11) */}
+          {dashboardTab === 'routes' && (
+            <RoutePlanningView />
+          )}
+
+          {/* Tab 4: Delivery Tracking (Image 7) */}
           {dashboardTab === 'tracking' && (
             <DeliveryTrackingView overview={overview} />
           )}
 
-          {/* Tab 2: AI Dispatch & LLaMA 3.1 8B Tech Engine */}
+          {/* Tab 5: AI Dispatch & LLaMA 3.1 8B Tech Engine */}
           {dashboardTab === 'dispatch' && (
             <AIDispatchEngine
               onNavigateTracking={() => setDashboardTab('tracking')}
@@ -359,6 +377,15 @@ export default function App({ initialView }: { initialView?: 'landing' | 'dashbo
             setDashboardTab('overview')
           }}
         />
+
+        {/* Interactive Guided Tour (Walkthrough) */}
+        {showTour && (
+          <GuidedTour
+            activeTab={dashboardTab}
+            onSelectTab={setDashboardTab}
+            onCloseTour={() => setShowTour(false)}
+          />
+        )}
       </div>
     </div>
   )
